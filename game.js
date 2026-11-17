@@ -102,19 +102,19 @@ $('#fullscreen').onclick=()=>{if(document.fullscreenElement)document.exitFullscr
 function begin(){
  if(qte||swing||tab!=='mine')return;SoundFX.unlock();const started=M.startMining(state,sector);if(!started.ok){stopAuto();toast(started.message);renderPlayer();return;}
  SoundFX.play('start');
- qte={start:performance.now(),duration:Math.max(300,Math.min(3000,(300+Math.random()*2700)*M.timingFactor(state,sector))),x:30+Math.random()*40,y:28+Math.random()*25};
- $('#prompt').innerHTML=`<div class="qte" style="left:${qte.x}%;top:${qte.y}%"><i class="target"></i><i class="ring"></i><b>แตะ</b><small class="qte-score">0%</small></div>`;toast('คลิก / แตะ เมื่อวงสีขาวทับเส้นเขียว • ตรงเส้น 100%');save();render();
+ qte={start:performance.now(),duration:Math.max(300,Math.min(3000,(300+Math.random()*2700)*M.timingFactor(state,sector))),...ringLocation()};
+ $('#prompt').innerHTML=`<div class="qte" style="left:${qte.x}%;top:${qte.y}%;transform:translate(-50%,-50%) scale(${qte.scale})"><i class="target"></i><i class="ring"></i><b>แตะ</b><small class="qte-score">0%</small></div>`;toast('คลิก / แตะ เมื่อวงสีขาวทับเส้นเขียว • ตรงเส้น 100%');save();render();
 }
 function finish(quality,reason,playerInput=false){
  if(!qte)return;const percent=playerInput?(typeof quality==='boolean'?(quality?100:0):quality):0;const target=qte;qte=null;$('#prompt').innerHTML='';let result=M.mine(state,percent,sector);if(!result)return;
- if(!document.hidden){spawnPressBlast(target,result.quality,performance.now());SoundFX.play(result.ore?'press':'miss',result.critical);}
+ if(!document.hidden){spawnPressBlast({...target,x:pointerAim.x*100,y:pointerAim.y*100},result.quality,performance.now());SoundFX.play(result.ore?'press':'miss',result.critical);}
  let msg=result.ore?`${result.critical?'✦ PERFECT! ':''}${result.quality}% • ${result.ore.name} +${result.amount}`:'0% • ขุดพลาด ไม่ได้รับแร่';
  if(result.rockBroken)msg+=' • หินแตก! หินก้อนใหม่พร้อมขุด';if(result.unlockedMine!==null&&result.unlockedMine!==undefined)msg+=' • ปลดล็อก '+M.mines[result.unlockedMine].name;
  if(result.bonus)msg+=` • โบนัส ${result.bonus.name} +1`;if(result.triggered)msg+=` • ✦ ${result.effect.name}`;if(reason)msg+=' • '+reason;msg+=` • EXP +${result.xp}`;if(result.levels)msg+=` • LEVEL UP! Lv.${state.player.level}`;
- toast(msg);logs.unshift(msg);swing={start:performance.now(),critical:result.critical,color:result.ore?.color||'#889b90',impacted:false,loot:result};if(autoMining&&(M.tool(state).dur===0||state.player.energy<M.energyCost(state)))stopAuto();if(M.tool(state).dur===0)toast(msg+' • อีเตอร์พังแล้ว ไปซ่อมได้ที่ร้านซ่อม');save();render();
+ toast(msg);logs.unshift(msg);swing={aim:{...pointerAim},start:performance.now(),critical:result.critical,color:result.ore?.color||'#889b90',impacted:false,loot:result};if(autoMining&&(M.tool(state).dur===0||state.player.energy<M.energyCost(state)))stopAuto();if(M.tool(state).dur===0)toast(msg+' • อีเตอร์พังแล้ว ไปซ่อมได้ที่ร้านซ่อม');save();render();
 }
 function pointerPosition(e){const rect=$('#world').getBoundingClientRect();if(rect.width>0&&rect.height>0&&Number.isFinite(e.clientX)&&Number.isFinite(e.clientY))pointerAim={x:Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width)),y:Math.max(0,Math.min(1,(e.clientY-rect.top)/rect.height))};}
-function playerAction(e){if(e.isTrusted!==true||document.hidden||tab!=='mine'||swing)return;SoundFX.unlock();if(qte)finish(M.score((performance.now()-qte.start)/qte.duration),'',true);else begin();}
+function playerAction(e){if(e.isTrusted!==true||document.hidden||tab!=='mine'||swing)return;SoundFX.unlock();if(e.target?.id!=='mine'&&!onBoulder(pointerAim.x*W,pointerAim.y*H)){toast('คลิก / แตะบนก้อนหินเพื่อขุด');return;}if(e.target?.id==='mine')pointerAim=qte?{x:qte.x/100,y:qte.y/100}:{x:.5,y:.51};if(qte)finish(M.score((performance.now()-qte.start)/qte.duration),'',true);else begin();}
 $('#mine').onclick=playerAction;
 document.addEventListener('pointermove',e=>{if(tab==='mine'&&e.isPrimary!==false&&e.target.closest?.('.scene'))pointerPosition(e);});
 document.addEventListener('pointerdown',e=>{if(e.isTrusted!==true||e.isPrimary===false||e.button!==0||!e.target.closest?.('.scene')||e.target.closest('button,a,input,select,summary,label'))return;e.preventDefault();pointerPosition(e);playerAction(e);});
@@ -133,12 +133,12 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){pressBlast
 $('#export').onclick=()=>{let u=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=u;a.download='deepfield-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};
 $('#import').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{if(f.size>100000)throw Error();let s=M.migrate(JSON.parse(await f.text()));if(!M.valid(s))throw Error();if(!confirm('นำเข้าเซฟนี้แทนความคืบหน้าปัจจุบัน?'))return;if(qte){qte=null;$('#prompt').innerHTML='';}stopAuto();pressBlasts=[];rockFragments=[];state=s;sector=state.sector;dropSector=sector;logs=[];lootDrops=[];lootBursts=[];lootBannerUntil=0;$('#loot-banner').hidden=true;save();render();toast('นำเข้าเซฟเรียบร้อย');}catch{alert('ไฟล์เซฟไม่ถูกต้อง');}finally{e.target.value='';}};
 // Perspective-projected low-poly cave, rendered locally with no network assets.
-const canvas=$('#world'),ctx=canvas.getContext('2d');let W=800,H=430,dpr=1;function resize(){dpr=Math.min(devicePixelRatio||1,2);W=canvas.clientWidth;H=canvas.clientHeight;canvas.width=W*dpr;canvas.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);}new ResizeObserver(resize).observe(canvas);
+const canvas=$('#world'),ctx=canvas.getContext('2d');let W=800,H=430,dpr=1;function resize(){dpr=Math.min(devicePixelRatio||1,2);W=canvas.clientWidth;H=canvas.clientHeight;canvas.width=W*dpr;canvas.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);if(qte){Object.assign(qte,ringLocation());const ring=$('.qte');if(ring){ring.style.left=qte.x+'%';ring.style.top=qte.y+'%';ring.style.transform=`translate(-50%,-50%) scale(${qte.scale})`;}}}new ResizeObserver(resize).observe(canvas);
 let seed=42;function rand(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;}const stones=Array.from({length:42},()=>({x:(rand()-.5)*26,y:rand()*1.2-2.5,z:rand()*22+4,s:.4+rand()*2}));
 function project(p){let z=p[2]+13;return[W/2+p[0]*W*.8/z,H*.38-p[1]*W*.8/z];}
-function poly(points,color){ctx.beginPath();points.map(project).forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fillStyle=color;ctx.fill();}
+function poly(points,color,projection=project){ctx.beginPath();points.map(projection).forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fillStyle=color;ctx.fill();}
 function rock(x,y,z,s,color){let a=[x-s,y,z-s],b=[x+s,y,z-s],c=[x+s*.9,y,z+s],d=[x-s,y,z+s],top=[x-s*.2,y+s*1.6,z],l=[x-s*.7,y+s*.7,z-s*.7],r=[x+s*.7,y+s*.8,z-s*.4];poly([d,c,top],color[0]);poly([a,d,top,l],color[1]);poly([b,a,l,r],color[2]);poly([c,b,r,top],color[3]);poly([l,top,r],color[4]);}
-function frame(now){frameStep=Math.min(2.5,(now-(lastFrame||now-16.67))/16.67);lastFrame=now;updateSwing(now);ctx.clearRect(0,0,W,H);let bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,M.mines[sector].bg);bg.addColorStop(1,M.mines[sector].floor);ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);poly([[-30,-3,0],[30,-3,0],[30,-3,50],[-30,-3,50]],M.mines[sector].floor);for(let i=0;i<8;i++){let x=(i-3.5)*6;rock(x,-3,27,4,['#152724','#1a2c27','#22362c','#112420','#304235']);}for(const r of [...stones].sort((a,b)=>b.z-a.z))rock(r.x,r.y,r.z,r.s,['#34493b','#2b3b32','#405442','#253b32','#4a5d46']);let shake=impactShake(now);ctx.save();ctx.translate(shake,shake*.4);if(swing?.impacted&&swing.loot?.rockBroken){const growth=Math.max(0,Math.min(1,(now-swing.start-550)/300));const center=project([0,-1,2]);ctx.translate(...center);ctx.scale(growth,growth);ctx.translate(-center[0],-center[1]);}drawMiningBoulder();ctx.restore();drawPickaxe(now);let glow=ctx.createRadialGradient(W*.5,H*.45,0,W*.5,H*.45,W*.45);glow.addColorStop(0,'#c9e88b0c');glow.addColorStop(1,'#00000080');ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);for(let i=0;i<22;i++){let x=(i*137.5+Math.sin(now*.0002+i)*20)%W,y=(i*51-now*.012)%H;if(y<0)y+=H;ctx.fillStyle='#e2efbc33';ctx.fillRect(x,y,2,2);}for(let p of particles){p.x+=p.vx*frameStep;p.y+=p.vy*frameStep;p.vy+=.12*frameStep;p.life-=.025*frameStep;ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,4,4);}particles=particles.filter(p=>p.life>0);ctx.globalAlpha=1;if(flash>0){ctx.fillStyle=`rgba(211,255,163,${flash*.15})`;ctx.fillRect(0,0,W,H);flash=Math.max(0,flash-.025*frameStep);}drawLootEffects(now);drawRockFragments(now);drawPressBlasts(now);if(qte){let p=(now-qte.start)/qte.duration;if(p>=1)finish(false,'หมดเวลา');else{let ring=$('.ring');if(ring){let size=150-110*p;ring.style.width=ring.style.height=size+'px';let quality=M.score(p);ring.style.borderColor=quality===100?'#c4f589':'#ffffff';const score=$('.qte-score');if(score)score.textContent=quality+'%';}}}if(autoMining&&!document.hidden&&tab==='mine'&&!qte&&!swing)begin();requestAnimationFrame(frame);}
+function frame(now){frameStep=Math.min(2.5,(now-(lastFrame||now-16.67))/16.67);lastFrame=now;updateSwing(now);ctx.clearRect(0,0,W,H);let bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,M.mines[sector].bg);bg.addColorStop(1,M.mines[sector].floor);ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);poly([[-30,-3,0],[30,-3,0],[30,-3,50],[-30,-3,50]],M.mines[sector].floor);for(let i=0;i<8;i++){let x=(i-3.5)*6;rock(x,-3,27,4,['#152724','#1a2c27','#22362c','#112420','#304235']);}for(const r of [...stones].sort((a,b)=>b.z-a.z))rock(r.x,r.y,r.z,r.s,['#34493b','#2b3b32','#405442','#253b32','#4a5d46']);let shake=impactShake(now);ctx.save();ctx.translate(shake,shake*.4);if(swing?.impacted&&swing.loot?.rockBroken){const growth=Math.max(0,Math.min(1,(now-swing.start-550)/300));const center=[W*.5,H*.51];ctx.translate(...center);ctx.scale(growth,growth);ctx.translate(-center[0],-center[1]);}drawMiningBoulder();ctx.restore();drawPickaxe(now);let glow=ctx.createRadialGradient(W*.5,H*.45,0,W*.5,H*.45,W*.45);glow.addColorStop(0,'#c9e88b0c');glow.addColorStop(1,'#00000080');ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);for(let i=0;i<22;i++){let x=(i*137.5+Math.sin(now*.0002+i)*20)%W,y=(i*51-now*.012)%H;if(y<0)y+=H;ctx.fillStyle='#e2efbc33';ctx.fillRect(x,y,2,2);}for(let p of particles){p.x+=p.vx*frameStep;p.y+=p.vy*frameStep;p.vy+=.12*frameStep;p.life-=.025*frameStep;ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,4,4);}particles=particles.filter(p=>p.life>0);ctx.globalAlpha=1;if(flash>0){ctx.fillStyle=`rgba(211,255,163,${flash*.15})`;ctx.fillRect(0,0,W,H);flash=Math.max(0,flash-.025*frameStep);}drawLootEffects(now);drawRockFragments(now);drawPressBlasts(now);if(qte){let p=(now-qte.start)/qte.duration;if(p>=1)finish(false,'หมดเวลา');else{let ring=$('.ring');if(ring){let size=150-110*p;ring.style.width=ring.style.height=size+'px';let quality=M.score(p);ring.style.borderColor=quality===100?'#c4f589':'#ffffff';const score=$('.qte-score');if(score)score.textContent=quality+'%';}}}if(autoMining&&!document.hidden&&tab==='mine'&&!qte&&!swing)begin();requestAnimationFrame(frame);}
 // Imported Kenney Nature Kit OBJ meshes, bundled locally under CC0.
 function stoneNoise(n){let v=Math.sin(n*127.1+311.7)*43758.5453;return v-Math.floor(v);}
 const rockMeshes=M.mines.map((mine,index)=>{
@@ -154,31 +154,59 @@ const rockMeshes=M.mines.map((mine,index)=>{
   return {p,center,id,visible,light:Math.max(0,n[0]*-.45+n[1]*.72+n[2]*-.52)};
  }).filter(f=>f.visible).sort((a,b)=>b.center[2]-a.center[2]);
 });
+let boulderCache=null;
+function boulderView(){
+ const key=sector+':'+W+':'+H;if(boulderCache?.key===key)return boulderCache;
+ const points=rockMeshes[sector].flatMap(f=>f.p.map(project)),xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);
+ const left=Math.min(...xs),top=Math.min(...ys),width=Math.max(...xs)-left,height=Math.max(...ys)-top;
+ const drawWidth=W*(W<H?.88:.70),drawHeight=H*.68;
+ const triangles=rockMeshes[sector].flatMap(face=>{const points=face.p.map(p=>{const q=project(p);return [W*.5+((q[0]-left)/width-.5)*drawWidth,H*.51+((q[1]-top)/height-.5)*drawHeight];});return points.slice(1,-1).map((_,i)=>[points[0],points[i+1],points[i+2]]);});
+ return boulderCache={key,left,top,width,height,drawWidth,drawHeight,triangles};
+}
+function projectBoulder(p){const v=boulderView(),q=project(p);return [W*.5+((q[0]-v.left)/v.width-.5)*v.drawWidth,H*.51+((q[1]-v.top)/v.height-.5)*v.drawHeight];}
+function boulderPoly(points,color){poly(points,color,projectBoulder);}
+function onBoulder(x,y){
+ const cross=(a,b)=> (x-b[0])*(a[1]-b[1])-(a[0]-b[0])*(y-b[1]);
+ return boulderView().triangles.some(p=>{const signs=[cross(p[0],p[1]),cross(p[1],p[2]),cross(p[2],p[0])];return !(signs.some(n=>n<0)&&signs.some(n=>n>0));});
+}
+function ringFits(x,y,radius){if(!onBoulder(x,y))return false;for(let i=0;i<24;i++){const a=i*Math.PI/12;if(!onBoulder(x+Math.cos(a)*radius,y+Math.sin(a)*radius))return false;}return true;}
+function ringLocation(){
+ let radius=Math.min(78,W*.15,H*.15);
+ for(let shrink=0;shrink<8;shrink++,radius*=.8){
+  const candidates=[];for(let x=.35;x<=.65;x+=.05)for(let y=.35;y<=.65;y+=.05)if(ringFits(x*W,y*H,radius+6))candidates.push({x:x*100,y:y*100,scale:radius/78});
+  if(candidates.length)return candidates[Math.floor(Math.random()*candidates.length)];
+ }
+ return {x:50,y:51,scale:.25};
+}
+function projectTool(p){
+ const aim=swing?.aim??pointerAim,anchor=project(pickaxePoint([-2,3.1,-.25],-.55,0)),point=project(p);
+ return [point[0]+aim.x*W-anchor[0],point[1]+aim.y*H-anchor[1]];
+}
 function stonePoint(face,a,b){let c=1-a-b;return face.p[0].map((n,k)=>n*a+face.p[1][k]*b+face.p[2][k]*c);}
 function drawMiningBoulder(){
- let shadow=project([0,-2.95,2]);ctx.save();ctx.translate(...shadow);ctx.scale(1,.24);ctx.beginPath();ctx.arc(0,0,W*.205,0,Math.PI*2);ctx.fillStyle='#07100c77';ctx.fill();ctx.restore();
+ let shadow=[W*.5,H*.87];ctx.save();ctx.translate(...shadow);ctx.scale(1,.24);ctx.beginPath();ctx.arc(0,0,W*.205,0,Math.PI*2);ctx.fillStyle='#07100c77';ctx.fill();ctx.restore();
  const oreColors=[M.mines[sector].color,M.mines[sector].color,'#e3edcf'];
  for(const f of rockMeshes[sector]){
   let grain=stoneNoise(f.id+17)*14,shade=Math.round(42+f.light*64+grain);
-  poly(f.p,`rgb(${shade},${shade+5},${shade+1})`);
+  boulderPoly(f.p,`rgb(${shade},${shade+5},${shade+1})`);
   // Speckles stay attached to their triangle as the rock shakes.
   for(let i=0;i<7;i++){
-   let a=stoneNoise(f.id*31+i*3),b=stoneNoise(f.id*71+i*7)*(1-a),p=project(stonePoint(f,a,b));
+   let a=stoneNoise(f.id*31+i*3),b=stoneNoise(f.id*71+i*7)*(1-a),p=projectBoulder(stonePoint(f,a,b));
    ctx.fillStyle=i%2?'#e7e5cd20':'#111b1940';ctx.fillRect(p[0],p[1],1+stoneNoise(i+f.id)*2,1);
   }
   let vein=Math.sin(f.center[0]*2.4+f.center[1]*1.9+sector*.8);
   if(Math.abs(vein)<.55&&f.center[1]>-1.9){
    let a=stonePoint(f,.12,.16),b=stonePoint(f,.74,.12),c=stonePoint(f,.23,.64),d=stonePoint(f,.3,.32);
-   poly([a,b,d],oreColors[0]);poly([b,c,d],oreColors[1]);poly([c,a,d],oreColors[2]);
+   boulderPoly([a,b,d],oreColors[0]);boulderPoly([b,c,d],oreColors[1]);boulderPoly([c,a,d],oreColors[2]);
   }
-  if(stoneNoise(f.id+810)>.73){let a=project(stonePoint(f,.12,.25)),b=project(stonePoint(f,.3,.35)),c=project(stonePoint(f,.55,.13));ctx.beginPath();ctx.moveTo(...a);ctx.lineTo(...b);ctx.lineTo(...c);ctx.strokeStyle='#17201a80';ctx.lineWidth=1;ctx.stroke();}
+  if(stoneNoise(f.id+810)>.73){let a=projectBoulder(stonePoint(f,.12,.25)),b=projectBoulder(stonePoint(f,.3,.35)),c=projectBoulder(stonePoint(f,.55,.13));ctx.beginPath();ctx.moveTo(...a);ctx.lineTo(...b);ctx.lineTo(...c);ctx.strokeStyle='#17201a80';ctx.lineWidth=1;ctx.stroke();}
  }
 }
 // A solid 3D pickaxe: rotate vertices through the swing before perspective projection.
 function pickaxePoint(p,angle,lift){
  let [x,y,z]=p,c=Math.cos(angle),s=Math.sin(angle),yaw=-.42;
  let rx=x*c-y*s,ry=x*s+y*c;
- return [2.8+(pointerAim.x-.5)*9+rx*Math.cos(yaw)+z*Math.sin(yaw),-3.2+(.5-pointerAim.y)*6+ry+lift,-2.5-rx*Math.sin(yaw)+z*Math.cos(yaw)];
+ return [2.8+rx*Math.cos(yaw)+z*Math.sin(yaw),-3.2+ry+lift,-2.5-rx*Math.sin(yaw)+z*Math.cos(yaw)];
 }
 function pickaxeMesh(angle,lift){
  const faces=[],type=M.tool(state).type,design=M.types[type];
@@ -207,7 +235,7 @@ function swingPose(now){
  if(qte){let p=Math.min(1,(now-qte.start)/qte.duration);return {angle:.15+.8*Math.sin(p*Math.PI/2),lift:.25*p};}
  return {angle:.15+Math.sin(now*.0015)*.025,lift:Math.sin(now*.002)*.025};
 }
-function drawPickaxe(now){if(M.tool(state).dur===0&&!swing)return;let pose=swingPose(now);for(let f of pickaxeMesh(pose.angle,pose.lift))poly(f.p,f.color);}
+function drawPickaxe(now){if(M.tool(state).dur===0&&!swing)return;let pose=swingPose(now);for(let f of pickaxeMesh(pose.angle,pose.lift))poly(f.p,f.color,projectTool);}
 function impactShake(now){if(!swing?.impacted)return 0;let t=(now-swing.start-320)/400;return t>=0&&t<1?Math.sin(t*65)*(1-t)*(swing.critical?12:5):0;}
 const lootImages=new Map();
 function lootImage(ore){
@@ -295,7 +323,7 @@ function drawRockFragments(now){
 }
 function updateSwing(now){if(!swing)return;let elapsed=now-swing.start;
  if(elapsed>=320&&!swing.impacted){swing.impacted=true;flash=swing.critical?1:.4;
-  let tip=project(pickaxePoint([-2,3.1,-.25],-.55,0));
+  let tip=[swing.aim.x*W,swing.aim.y*H];
   if(swing.loot?.ore){spawnRockFragments(tip,now,!!swing.loot.rockBroken);SoundFX.play('impact',swing.critical||swing.loot.rockBroken);}
   if(swing.loot?.ore)spawnLootEffects(swing.loot,tip,now);
   for(let i=0;i<(swing.critical?48:22);i++)particles.push({x:tip[0],y:tip[1],vx:(Math.random()-.5)*(swing.critical?15:9),vy:-2-Math.random()*7,life:1,color:i%3?swing.color:'#f7f9d0'});

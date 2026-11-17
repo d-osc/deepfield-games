@@ -52,9 +52,9 @@ const keydown=(key,code)=>{for(const h of events.keydown)h({key,code,isTrusted:t
 keydown('w','KeyW');assert.equal(run('qte'),null);
 tap({pointerType:'touch'});assert(run('!!qte'));assert(run('qte.duration>=300&&qte.duration<=3000'));
 const hitsBeforeSynthetic=run('state.hits');tap({isTrusted:false});tap({button:2});tap({isPrimary:false});assert(run('!!qte'));assert.equal(run('state.hits'),hitsBeforeSynthetic);
-const beforeAim=run('JSON.stringify(pickaxePoint([0,0,0],0,0))');
+const beforeAim=run('JSON.stringify(projectTool(pickaxePoint([0,0,0],0,0)))');
 for(const h of events.pointermove)h({clientX:800,clientY:100,isPrimary:true,target:{closest:()=>node('.scene')}});
-assert.notEqual(run('JSON.stringify(pickaxePoint([0,0,0],0,0))'),beforeAim);
+assert.notEqual(run('JSON.stringify(projectTool(pickaxePoint([0,0,0],0,0)))'),beforeAim);
 now=run('qte.start+qte.duration*(85/110)');tap({pointerType:'touch'});assert.equal(run('qte'),null);assert(node('#toast').textContent.includes('100%'));
 run('swing=null');node('#auto-mine').onclick();assert(run('autoMining'));assert(run('!!qte'));
 const hitsBefore=run('state.hits'),oresBeforeAuto=run('JSON.stringify(state.ores)');
@@ -69,6 +69,16 @@ run('swing=null;state.player.energy=M.maxEnergy(state)');node('#auto-mine').oncl
 click({tab:'mine'});run('swing=null;state.player.energy=M.maxEnergy(state)');node('#auto-mine').onclick();box.document.hidden=true;for(const h of events.visibilitychange)h();assert.equal(run('autoMining'),false);assert.equal(run('qte'),null);box.document.hidden=false;
 run('swing=null;state.player.energy=0');node('#auto-mine').onclick();assert.equal(run('autoMining'),false);assert.equal(run('qte'),null);
 run('swing=null;state.player.energy=M.maxEnergy(state);state.tools[0].dur=0');node('#auto-mine').onclick();assert.equal(run('autoMining'),false);assert.equal(run('qte'),null);
+// All rock silhouettes contain the full ring on desktop, portrait and landscape.
+run('qte=null;swing=null');
+for(const [width,height] of [[900,430],[390,844],[844,390]])for(let i=0;i<50;i++){
+ run(`W=${width};H=${height};sector=${i}`);
+ assert(run('(()=>{const location=ringLocation();return ringFits(location.x/100*W,location.y/100*H,location.scale*78+3);})()'),`ring outside mine ${i} at ${width}x${height}`);
+}
+run('W=900;H=430;sector=0;pointerAim={x:.47,y:.51};swing={aim:{...pointerAim},start:0,impacted:false}');
+run('pointerAim={x:.9,y:.1}');
+assert(run('(()=>{const p=projectTool(pickaxePoint([-2,3.1,-.25],-.55,0));return Math.abs(p[0]-.47*W)<1e-6&&Math.abs(p[1]-.51*H)<1e-6;})()'));
+run('swing=null');
 await run('SaveStorage.flush()');
 console.log('PASS: game HUD, menus, QTE, 50 scenes/100 tools, impact-timed ore sprites, bonus/Perfect drops, cleanup and no duplicate rewards');
 
