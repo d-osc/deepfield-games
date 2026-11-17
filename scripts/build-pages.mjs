@@ -17,6 +17,15 @@ for(const name of ['style.css','game-ui.css','manifest.webmanifest','LICENSE']){
 const runtime=['engine.js','progression.js','assets/kenney/rocks.js','storage.js','audio.js'];
 const sources=await Promise.all(runtime.map(name=>readFile(path.join(root,name),'utf8')));
 const game=await readFile(path.join(root,'game.js'),'utf8');
+const workerSource=await readFile(path.join(root,'save-worker.js'),'utf8');
+const storageSource=await readFile(path.join(root,'storage.js'),'utf8');
+const workerCombined=workerSource.replace("importScripts('storage.js');",storageSource);
+const workerMinified=await transform(workerCombined,{minify:true,target:'es2022',legalComments:'none'});
+const workerCode=JavaScriptObfuscator.obfuscate(workerMinified.code,{target:'browser',compact:true,sourceMap:false,seed:2718}).getObfuscatedCode();
+await writeFile(path.join(output,'save-worker.js'),workerCode);
+const workerRevision=createHash('sha256').update(workerCode).digest('hex').slice(0,12);
+sources[sources.length-2]=sources[sources.length-2].replace("new Worker('save-worker.js')",`new Worker('save-worker.js?v=${workerRevision}')`);
+
 const combined=`(()=>{${sources.join('\n;\n')}\n;(async()=>{${game}\n})().catch(error=>{console.error(error);document.querySelector('#savehint').textContent='เปิดเกมไม่ได้ กรุณาโหลดหน้าใหม่';});})();`;
 const minified=await transform(combined,{minify:true,target:'es2022',legalComments:'none',sourcemap:false});
 const protectedCode=JavaScriptObfuscator.obfuscate(minified.code,{

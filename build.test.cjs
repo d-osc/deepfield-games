@@ -4,7 +4,7 @@ const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path'),asse
  const root=path.join(__dirname,'dist'),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
  assert(html.includes('game.bundle.js'));assert(/game-ui\.css\?v=[a-f0-9]{12}/.test(html));assert(/style\.css\?v=[a-f0-9]{12}/.test(html));assert(!html.includes('src="game.js"'));
  function files(dir){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?files(path.join(dir,e.name)):[path.join(dir,e.name)]);}
- const published=files(root);assert.equal(published.filter(f=>f.endsWith('.js')).length,1);assert(!published.some(f=>/\.(map|zip)$/.test(f)));
+ const published=files(root);assert.equal(published.filter(f=>f.endsWith('.js')).length,2);assert(!published.some(f=>/\.(map|zip)$/.test(f)));
  const bundle=fs.readFileSync(path.join(root,'game.bundle.js'),'utf8');assert(!bundle.includes('sourceMappingURL'));assert(!bundle.includes('function renderPlayer('));
  const events={},nodes=new Map(),gradient={addColorStop(){}};let now=0,frameCallback;
  const context=new Proxy({createLinearGradient:()=>gradient,createRadialGradient:()=>gradient},{get:(o,k)=>k in o?o[k]:()=>{},set:(o,k,v)=>(o[k]=v,true)});

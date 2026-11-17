@@ -1,4 +1,4 @@
-const SaveStorage=(()=>{
+const SaveStorageCore=(()=>{
  const slot='deepfield-v1',limit=100;
  let queue=Promise.resolve(),blocked=false,chain=null;
  async function hash(block){
@@ -43,4 +43,29 @@ const SaveStorage=(()=>{
   queue=result.catch(()=>{});return result;
  }
  return {load,save,flush:()=>queue};
+})();
+
+// Worker owns chain validation, hashing and serialization; only localStorage I/O stays on UI.
+const SaveStorage=(()=>{
+ if(globalThis.__storageWorker||typeof Worker==='undefined'||globalThis.location?.protocol==='file:')return SaveStorageCore;
+ let worker=null,id=0,pending=new Map(),queue=Promise.resolve(),failed=false;
+ function fail(error){failed=true;worker?.terminate();for(const item of pending.values()){clearTimeout(item.timer);item.reject(error);}pending.clear();}
+ function request(type,state){return new Promise((resolve,reject)=>{
+  if(failed){reject(Error('Save worker unavailable'));return;}
+  const requestId=++id,timer=setTimeout(()=>fail(Error('Save worker timed out')),15000);
+  pending.set(requestId,{resolve,reject,timer});
+  try{worker.postMessage({id:requestId,type,state,raw:type==='load'?localStorage.getItem('deepfield-v1'):undefined,key:type==='load'?localStorage.getItem('deepfield-key-v1'):undefined});}catch(error){fail(error);}
+ });}
+ function start(){
+  if(worker)return;
+  worker=new Worker('save-worker.js');
+  worker.onerror=()=>fail(Error('Save worker failed'));
+  worker.onmessage=({data})=>{const item=pending.get(data.id);if(!item)return;clearTimeout(item.timer);pending.delete(data.id);
+   if(data.error){item.reject(Error(data.error));return;}
+   try{if(data.raw!==undefined)localStorage.setItem('deepfield-v1',data.raw);item.resolve(data.value);}catch(error){item.reject(error);}
+  };
+ }
+ async function load(){try{start();}catch{return SaveStorageCore.load();}return request('load');}
+ function save(state){if(!worker)return SaveStorageCore.save(state);const result=request('save',state);queue=result.catch(()=>{});return result;}
+ return {load,save,flush:()=>worker?queue:SaveStorageCore.flush()};
 })();
