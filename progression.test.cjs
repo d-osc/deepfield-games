@@ -21,8 +21,8 @@ s=ready();let energy=s.player.energy,cost=G.energyCost(s);assert(G.startMining(s
 // Exact ring overlap is 100%; wrong key and timeout are resolved as zero.
 assert.equal(G.score(85/110),100);assert.equal(G.score(0),0);assert.equal(G.score(1),0);assert.equal(G.score(NaN),0);assert(G.score(.7)>G.score(.4));assert(G.score(.9)<100);
 s=ready();let poor=hit(s,20);assert.equal(poor.quality,20);assert(poor.ore);assert.equal(s.crits,0);const xp=poor.xp;let perfect=hit(ready(),100);assert(perfect.critical);assert(perfect.xp>xp);
-// Paid unlocks cannot charge twice or travel into a locked mine.
-s=G.fresh();const price=G.mines[1].unlockPrice;s.money=price-1;assert(!G.action(s,'unlock',1));assert(!G.action(s,'travel',1));s.money=price;assert(G.action(s,'unlock',1));assert.equal(s.money,0);assert(!G.action(s,'unlock',1));assert(G.action(s,'travel',1));assert(G.valid(s));
+// Manual travel and paid unlocks are disabled.
+s=G.fresh();const moneyBefore=s.money;assert(!G.action(s,'unlock',1));assert(!G.action(s,'travel',1));assert.equal(s.money,moneyBefore);assert.equal(s.sector,0);
 // Every food can be bought and consumed, with no stacking the same buff family.
 for(const f of G.foods){s=ready();s.money=10000;s.player.energy=1;s.foods[f.id]=0;assert(G.action(s,'buyFood',f.id));assert.equal(s.money,10000-f.price);assert(G.action(s,'eat',f.id));assert.equal(s.foods[f.id],0);assert.equal(s.player.energy,1+f.restore);if(f.kind!=='restore'){assert.equal(G.buffValue(s,f.kind),f.value);s.foods[f.id]=1;assert(G.action(s,'eat',f.id));assert.equal(s.buffs.length,1);let remaining=s.buffs[0].remaining;hit(s,0);assert.equal(s.buffs[0].remaining,remaining-1);}assert(G.valid(s));}
 function eat(s,id){s.foods[id]++;assert(G.action(s,'eat',id));}
@@ -66,9 +66,9 @@ console.log('PASS: levels/energy, 100 tool costs and lifecycles, QTE quality, 30
  assert(G.startMining(rockState).ok);G.mine(rockState,0);assert.equal(rockState.rockHealth[0],max);assert.deepEqual(rockState.unlocked,[0]);
  assert(G.startMining(rockState).ok);const damage=G.mine(rockState,100);assert(damage.rockDamage>0);assert.equal(rockState.rockHealth[0],max-damage.rockDamage);
  const persisted=G.migrate(JSON.parse(JSON.stringify(rockState)));assert.equal(persisted.rockHealth[0],rockState.rockHealth[0]);
- rockState.rockHealth[0]=1;assert(G.startMining(rockState).ok);const broken=G.mine(rockState,100);assert(broken.rockBroken);assert.equal(broken.unlockedMine,1);assert(rockState.unlocked.includes(1));assert.equal(rockState.sector,0);assert.equal(rockState.rockHealth[0],max);
- assert.equal(G.mine(rockState,100),null);assert.equal(rockState.unlocked.filter(i=>i===1).length,1);
- assert(G.action(rockState,'travel',1));rockState.rockHealth[1]=3;assert(G.action(rockState,'travel',0));assert.equal(rockState.rockHealth[0],max);assert.equal(rockState.rockHealth[1],3);
+ rockState.rockHealth[0]=1;assert(G.startMining(rockState).ok);const broken=G.mine(rockState,100);assert(broken.rockBroken);assert(Number.isInteger(broken.nextSector));assert.notEqual(rockState.sector,0);assert.equal(rockState.sector,broken.nextSector);assert.equal(rockState.rockHealth[0],max);
+ assert.equal(G.mine(rockState,100),null);
+ assert(!G.action(rockState,'travel',1));assert(!G.action(rockState,'unlock',1));rockState.rockHealth[1]=3;assert.equal(rockState.rockHealth[0],max);assert.equal(rockState.rockHealth[1],3);
  const last=ready(0,49);last.rockHealth[49]=1;assert(G.startMining(last).ok);const final=G.mine(last,100);assert(final.rockBroken);assert.equal(final.unlockedMine,null);assert.equal(last.rockHealth[49],G.rockMax(49));assert(G.valid(last));
  const legacy=G.fresh();delete legacy.rockHealth;assert(G.valid(legacy));assert.deepEqual(G.migrate(legacy).rockHealth,G.fresh().rockHealth);
  for(const hp of [-1,0,1.5,Infinity,G.rockMax(0)+1]){const invalid=G.fresh();invalid.rockHealth[0]=hp;assert(!G.valid(invalid));}
@@ -81,4 +81,10 @@ console.log('PASS: levels/energy, 100 tool costs and lifecycles, QTE quality, 30
  assert.deepEqual(G.migrate(upgraded).rockHealth,upgraded.rockHealth);assert.equal(previous.rockHealth[0],15);
  assert.equal(G.rockMax(0),60);assert.equal(G.rockMax(49),1236);assert(!G.valid({...upgraded,rockVersion:99}));
  console.log('PASS: doubled rock durability, proportional legacy migration and no repeat scaling');
+}
+
+for(const roll of [0,.5,.999999])for(const current of [0,25,49]){
+ const state=ready(0,current);state.rockHealth[current]=1;state.rockHealth[(current+1)%50]=1;
+ const money=state.money;assert(G.startMining(state).ok);const result=G.mine(state,100,current,()=>roll);
+ assert(result.rockBroken);assert.notEqual(state.sector,current);assert.equal(state.sector,result.nextSector);assert.equal(state.rockHealth[state.sector],G.rockMax(state.sector));assert.equal(state.money,money);assert(G.valid(G.migrate(state)));
 }

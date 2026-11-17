@@ -65,7 +65,7 @@ function recover(s,now=Date.now()){
 function addXp(s,amount){let p=s.player,levels=0;p.xp+=amount;while(p.level<10000&&p.xp>=xpNeeded(p.level)){p.xp-=xpNeeded(p.level);p.level++;p.energy=Math.min(maxEnergy(s),p.energy+12);levels++;}if(p.level===10000)p.xp=Math.min(p.xp,xpNeeded(p.level)-1);return levels;}
 function startMining(s,sector=s.sector,now=Date.now()){
  recover(s,now);const t=G.tool(s);
- if(s.pending||!mines[sector]||sector!==s.sector||!s.unlocked.includes(sector)||t.dur<=0)return {ok:false,message:'เหมืองยังล็อก หรืออีเตอร์ใช้ไม่ได้'};
+ if(s.pending||!mines[sector]||sector!==s.sector||t.dur<=0)return {ok:false,message:'อีเตอร์ใช้ไม่ได้ หรือไม่ใช่หินปัจจุบัน'};
  const cost=energyCost(s,t,sector);
  if(cost>maxEnergy(s))return {ok:false,message:`ต้องการกำลัง ${cost} มากกว่ากำลังสูงสุด • เพิ่มเลเวล ใช้อาหารลดกำลัง หรือเปลี่ยนอีเตอร์`};
  if(s.player.energy<cost)return {ok:false,message:`กำลังไม่พอ ต้องการ ${cost} • พักให้กำลังฟื้น หรือกินอาหาร`};
@@ -96,7 +96,12 @@ function mine(s,quality,sector=s.sector,rng=Math.random){
   result.rockDamage=Math.max(1,Math.ceil((types[t.type].power+Math.floor((t.level-1)/2))*percent/100));
   s.rockHealth[sector]=Math.max(0,s.rockHealth[sector]-result.rockDamage);
   result.rockBroken=s.rockHealth[sector]===0;result.unlockedMine=null;
-  if(result.rockBroken){s.rockHealth[sector]=rockMax(sector);if(sector+1<mines.length&&!s.unlocked.includes(sector+1)){s.unlocked.push(sector+1);result.unlockedMine=sector+1;}}
+  if(result.rockBroken){
+   s.rockHealth[sector]=rockMax(sector);
+   const selected=Math.min(mines.length-2,Math.max(0,Math.floor(rng()*(mines.length-1))));
+   result.nextSector=selected>=sector?selected+1:selected;s.sector=result.nextSector;s.rockHealth[s.sector]=rockMax(s.sector);
+   if(!s.unlocked.includes(s.sector))s.unlocked.push(s.sector); // Legacy save compatibility: visited locations only.
+  }
   s.ores[ore.id]+=amount;result.ore=ore;result.amount=amount;
   if(e.kind==='echo'&&rng()<e.value/100){result.bonus=roll(rates,rng);s.ores[result.bonus.id]++;result.triggered=true;}
  }
@@ -106,13 +111,7 @@ function mine(s,quality,sector=s.sector,rng=Math.random){
 }
 function action(s,name,id){
  if(s.pending)return false;
- if(name==='unlock'){
-  const m=mines[id];if(!m||s.unlocked.includes(id)||s.money<m.unlockPrice)return false;
-  s.money-=m.unlockPrice;s.unlocked.push(id);return true;
- }
- if(name==='travel'){
-  if(!s.unlocked.includes(id))return false;s.sector=id;return true;
- }
+ if(name==='unlock'||name==='travel')return false;
  if(name==='buyFood'){
   const f=foods[id];if(!f||s.foods[id]>=1e6||s.money<f.price)return false;
   s.money-=f.price;s.foods[id]++;return true;

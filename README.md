@@ -8,7 +8,7 @@
 
 ฉากเหมืองแสดงเต็มพื้นที่หน้าต่าง พร้อม HUD เลเวล/กำลังด้านซ้ายบน เงินและแร่ที่เก็บได้ด้านขวา อีเตอร์ที่สวมใส่ด้านซ้ายล่าง และแถบเมนูเกมด้านล่าง ร้านค้า กระเป๋า ซ่อม อัปเกรด และแผนที่เปิดเป็นหน้าต่างทับฉาก ปิดด้วย Escape หรือปุ่ม X ร้านค้าแยกหมวดขายแร่ อีเตอร์ และอาหาร
 
-ควบคุม: คลิกเมาส์หรือแตะเพื่อขุด, M แผนที่เหมือง, C ร้านค้า, R ซ่อม, U อัปเกรด, B กระเป๋า เมนูเซฟอยู่ที่ปุ่มเฟืองมุมขวาบน และมีปุ่มขยายเต็มหน้าจอ การเลือกเข้าเหมืองจากแผนที่จะปิดหน้าต่างและกลับไปขุดทันที
+ควบคุม: คลิกเมาส์หรือแตะเพื่อขุด, C ร้านค้า, R ซ่อม, U อัปเกรด, B กระเป๋า เมนูเซฟอยู่ที่ปุ่มเฟืองมุมขวาบน และมีปุ่มขยายเต็มหน้าจอ การเลือกเข้าเหมืองจากแผนที่จะปิดหน้าต่างและกลับไปขุดทันที
 
 ## ผู้เล่นและกำลัง
 
@@ -76,7 +76,7 @@ Mining feedback includes expanding bursts at the timing ring, golden Perfect ray
 
 The manual mining and continuous-round buttons have been removed. Production HTML versions the bundle URL to refresh browser caches. This remains client-side behavior, not server anti-cheat.
 
-Rock durability is saved separately for all 50 mines (maximum 60 + mine index × 24). Successful player-timed hits deal damage from tool power, upgrades and timing quality; misses do not damage rock. Breaking a rock unlocks the next mine for free and resets the current mine to a fresh full-durability rock without changing location. The final mine respawns rocks without an out-of-range unlock. Each successful impact emits stone chips; a break produces a larger shatter and respawn animation. Timing and result percentages use larger text. Legacy saves receive full rock durability automatically.
+Rock durability is saved separately for all 50 mines (maximum 60 + mine index × 24). Successful player-timed hits deal damage from tool power, upgrades and timing quality; misses do not damage rock. Breaking a rock randomly chooses a different mine from the 49 alternatives and creates a full-durability rock there. There are no paid unlocks or manual mine selection. Old unlock lists are retained only for save compatibility. Each successful impact emits stone chips; a break produces a larger shatter and respawn animation. Timing and result percentages use larger text. Legacy saves receive full rock durability automatically.
 
 Mobile layout includes touch-sized controls, portrait and short landscape rules, safe-area padding, and scene touch handling without unwanted scrolling. Panels remain scrollable. Mining ignores secondary mouse buttons, secondary fingers and UI controls outside the mining button. The pickaxe tracks normalized scene pointer coordinates so resizing does not change the input scale.
 
@@ -85,3 +85,5 @@ The rock now fills a larger central area on desktop and mobile. Rings are placed
 Rock durability balance revision 2 doubles all mine rock HP. Existing rock saves migrate remaining HP proportionally once (15/30 becomes 30/60); subsequent loads preserve the migrated values.
 
 Portrait mobile HUD uses a compact player/energy strip, a bag counter instead of the full ore list, a short tool durability strip and full-width bottom navigation. The mine title/deposits stay above the reserved central rock area, while feedback sits between the tool strip and navigation. Rock projection reserves HUD space rather than drawing behind panels. Verified in-browser at 390×844 and 390×674; ring bounds also cover 320×568.
+
+Random rock flow: break the current rock to automatically draw another mine/rock. The previous location cannot repeat immediately. Old rings clear at the break, and new rings spawn only after the impact switches the scene. Inventory and the current randomized location persist in saves.

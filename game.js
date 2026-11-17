@@ -24,14 +24,11 @@ function renderRates(){
 }
 document.addEventListener('change',e=>{if(e.target.id==='drop-quality'){dropQuality=+e.target.value;renderRates();}});
 function renderMineBrowser(){
- $('#minecount').textContent=`${state.unlocked.length} / ${M.mines.length} เหมืองปลดล็อกแล้ว`;
+
  const location=M.mines[sector];$('#deposit-preview').innerHTML=location.drops.map(id=>{const o=M.ores.find(o=>o.id===id);return `<img src="assets/ores/${o.icon}" alt="${o.name}" width="24" height="24">`;}).join('');$('#rockname').textContent=location.name;const rockHP=state.rockHealth?.[sector]??M.rockMax(sector);$('#rock-health-text').textContent=`ความทนทานหิน ${rockHP} / ${M.rockMax(sector)}`;$('#rock-health-fill').style.width=rockHP/M.rockMax(sector)*100+'%';$('#sectorlabel').textContent=`SECTOR ${String(sector+1).padStart(2,'0')} / ${location.code}`;$('#depth').textContent=`ความลึก ${location.depth} m`;
  if(tab==='mine')$('#viewtitle').textContent=location.name;
  const d=M.debuff(state);$('#criticalinfo').textContent=`คุณภาพ 100%: เพชร ${((M.dropRates(state,sector,100).find(r=>r.ore.id==='diamond')?.chance||0)*100).toFixed(1)}% • ${d.name}: ${d.description} (หลังบัฟ ${d.value.toFixed(1)}%)`;
- $('#deposits').innerHTML=M.mines.map((mine,i)=>{
-  const unlocked=state.unlocked.includes(i),rates=M.dropRates(state,i,100);
-  return `<article class="mine-card ${sector===i?'selected':''} ${unlocked?'':'is-locked'}"><span class="mine-number" style="color:${mine.color}">${String(i+1).padStart(2,'0')} ◆ ${unlocked?'':'🔒'}</span><strong>${mine.name}</strong><small>ความลึก ${mine.depth} m</small><div class="mine-debuff">⚠ ${mine.debuff.name}<br>${mine.debuff.description}</div><div class="featured-rates">${mine.featured.map(id=>{const r=rates.find(r=>r.ore.id===id);return `<span><img src="assets/ores/${r.ore.icon}" alt="" width="20" height="20">${r.ore.name} ${(r.chance*100).toFixed(2)}%</span>`;}).join('')}</div><small>อัตราที่คุณภาพ 100% ตามอีเตอร์/บัฟปัจจุบัน</small>${unlocked?`<button data-sector="${i}" ${qte||swing?'disabled':''}>${sector===i?'อยู่ในเหมืองนี้':'เข้าเหมือง'}</button>`:btn(`ปลดล็อก ${mine.unlockPrice.toLocaleString()} G`,'unlock',i,!!qte||!!swing||state.money<mine.unlockPrice)}<button data-rate="${i}" class="rate-button">ดูแร่ที่ดรอป ${mine.drops.length} ชนิด</button></article>`;
- }).join('');renderRates();
+ renderRates();
 }
 let oreCategory='all',shopTab='ores';
 function oreEntries(){return M.ores.map((o,i)=>({o,i})).filter(({o})=>oreCategory==='all'||o.category===oreCategory);}
@@ -71,16 +68,16 @@ ${renderFood()}<div class="storecard"><div class="eyebrow">PICKAXE SUPPLY</div><
 }
 
 function openPanel(next,bagSection){
- if(!['mine','map','shop','bag','repair','upgrade'].includes(next))return;
+ if(!['mine','shop','bag','repair','upgrade'].includes(next))return;
  stopAuto();
  if(qte)finish(0,'ยกเลิกการขุด');
  if(bagSection)bagTab=bagSection;tab=next;
- $('#mineview').hidden=false;$('#game-window').hidden=tab==='mine';$('#mine-atlas').hidden=tab!=='map';$('#storeview').hidden=tab==='mine'||tab==='map';
+ $('#mineview').hidden=false;$('#game-window').hidden=tab==='mine';$('#storeview').hidden=tab==='mine'||tab==='map';
  document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));
  document.body?.classList?.toggle('panel-open',tab!=='mine');
  $('#viewtitle').textContent={mine:M.mines[sector].name,map:'แผนที่เหมือง',shop:'ร้านค้าค่ายนักขุด',bag:'กระเป๋านักขุด',repair:'โรงซ่อมอีเตอร์',upgrade:'เตาหลอมอัปเกรด'}[tab];
  $('#window-notice').textContent='';render();
- if(tab==='mine')$('#mine').focus();else $('.window-close').focus();
+ if(tab==='mine')$('#world').focus?.();else $('.window-close').focus();
 }
 
 document.addEventListener('click',e=>{
@@ -89,7 +86,6 @@ document.addEventListener('click',e=>{
  if(b.dataset.rate!==undefined){const next=+b.dataset.rate;if(!M.mines[next])return;dropSector=next;renderRates();$('#droprates').scrollIntoView({behavior:'smooth',block:'nearest'});return;}
  if(b.dataset.bagTab&&tab==='bag'){bagTab=b.dataset.bagTab;renderStore();return;}
  if(b.dataset.tab){openPanel(b.dataset.tab,b.dataset.openBag);return;}
- if(b.dataset.sector!==undefined&&!qte&&!swing){const next=+b.dataset.sector;if(Number.isInteger(next)&&M.mines[next]&&M.action(state,'travel',next)){sector=state.sector;dropSector=sector;save();openPanel('mine');toast('เข้าสู่'+M.mines[sector].name);}return;}
  if(b.dataset.action){
   let a=b.dataset.action,id=a==='sellOre'?b.dataset.id:+b.dataset.id;
   if(M.action(state,a,id)){save();render();if(a==='unlock')toast('ปลดล็อก'+M.mines[id].name+'แล้ว');else if(a==='eat')toast('กิน'+M.foods[id].name+'แล้ว');else if(a==='buyFood')toast('ซื้อ'+M.foods[id].name+'แล้ว');else if(a==='buy')toast('ซื้อ'+M.types[id].name+'แล้ว');else toast('ทำรายการเรียบร้อย');}
@@ -102,7 +98,7 @@ function begin(now=performance.now()){
  rings.push({id:++ringSequence,start:now,duration:Math.max(300,Math.min(3000,(300+Math.random()*2700)*M.timingFactor(state,sector))),...ringLocation()});
 }
 function tickRings(now){
- if(document.hidden||tab!=='mine')return;
+ if(document.hidden||tab!=='mine'||sector!==state.sector)return;
  rings=rings.filter(ring=>now-ring.start<ring.duration);
  if(now>=nextRingAt){begin(now);nextRingAt=now+350+Math.random()*400;}
  $('#prompt').innerHTML=rings.map(ring=>{const progress=Math.max(0,(now-ring.start)/ring.duration),size=150-110*progress,quality=M.score(progress);return `<div class="qte" data-ring-id="${ring.id}" style="left:${ring.x}%;top:${ring.y}%;transform:translate(-50%,-50%) scale(${ring.scale})"><i class="target"></i><i class="ring" style="width:${size}px;height:${size}px;border-color:${quality===100?'#c4f589':'#fff'}"></i><b>แตะ</b></div>`;}).join('');
@@ -111,7 +107,7 @@ function finish(quality,reason,playerInput=false){
  if(!qte)return;const percent=playerInput?(typeof quality==='boolean'?(quality?100:0):quality):0;const target=qte;rings=rings.filter(ring=>ring.id!==target.id);qte=null;let result=M.mine(state,percent,sector);if(!result)return;
  if(!document.hidden){spawnPressBlast({...target,x:pointerAim.x*100,y:pointerAim.y*100},result.quality,performance.now());SoundFX.play(result.ore?'press':'miss',result.critical);}
  let msg=result.ore?`${result.critical?'✦ PERFECT! ':''}${result.quality}% • ${result.ore.name} +${result.amount}`:'0% • ขุดพลาด ไม่ได้รับแร่';
- if(result.rockBroken)msg+=' • หินแตก! หินก้อนใหม่พร้อมขุด';if(result.unlockedMine!==null&&result.unlockedMine!==undefined)msg+=' • ปลดล็อก '+M.mines[result.unlockedMine].name;
+ if(result.rockBroken){msg+=' • หินแตก! สุ่มหินใหม่: '+M.mines[result.nextSector].name;rings=[];$('#prompt').innerHTML='';nextRingAt=performance.now()+320;}if(result.unlockedMine!==null&&result.unlockedMine!==undefined)msg+=' • ปลดล็อก '+M.mines[result.unlockedMine].name;
  if(result.bonus)msg+=` • โบนัส ${result.bonus.name} +1`;if(result.triggered)msg+=` • ✦ ${result.effect.name}`;if(reason)msg+=' • '+reason;msg+=` • EXP +${result.xp}`;if(result.levels)msg+=` • LEVEL UP! Lv.${state.player.level}`;
  toast(msg);logs.unshift(msg);swing={aim:{...pointerAim},start:performance.now(),critical:result.critical,color:result.ore?.color||'#889b90',impacted:false,loot:result};pendingImpacts.push(swing);if(M.tool(state).dur===0)toast(msg+' • อีเตอร์พังแล้ว ไปซ่อมได้ที่ร้านซ่อม');save();render();
 }
@@ -122,7 +118,7 @@ function playerAction(e){
  if(!onBoulder(x,y))return;
  const targets=[...rings].reverse().filter(ring=>now>=ring.start&&now-ring.start<ring.duration&&Math.hypot(x-ring.x/100*W,y-ring.y/100*H)<=Math.max(24,(75-55*(now-ring.start)/ring.duration)*ring.scale+8));
  if(!targets.length)return;
- SoundFX.unlock();for(const target of targets){const started=M.startMining(state,sector);if(!started.ok){toast(started.message);renderPlayer();break;}qte=target;finish(M.score((now-target.start)/target.duration),'',true);}tickRings(now);
+ SoundFX.unlock();for(const target of targets){const started=M.startMining(state,sector);if(!started.ok){toast(started.message);renderPlayer();break;}qte=target;finish(M.score((now-target.start)/target.duration),'',true);if(sector!==state.sector)break;}tickRings(now);
 }
 document.addEventListener('pointermove',e=>{if(tab==='mine'&&e.isPrimary!==false&&e.target.closest?.('.scene'))pointerPosition(e);});
 document.addEventListener('pointerdown',e=>{if(e.isTrusted!==true||(e.isPrimary===false&&e.pointerType!=='touch')||e.button!==0||!e.target.closest?.('.scene')||e.target.closest('button,a,input,select,summary,label'))return;e.preventDefault();pointerPosition(e);playerAction(e);});
@@ -133,7 +129,7 @@ document.addEventListener('keydown',e=>{
   if(controls.length){const first=controls[0],last=controls[controls.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}return;
  }
  if(e.repeat||e.ctrlKey||e.metaKey||e.altKey||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;
- const shortcut={b:'bag',m:'map',c:'shop',r:'repair',u:'upgrade'}[e.key.toLowerCase()];if(shortcut){e.preventDefault();openPanel(tab===shortcut?'mine':shortcut);}
+ const shortcut={b:'bag',c:'shop',r:'repair',u:'upgrade'}[e.key.toLowerCase()];if(shortcut){e.preventDefault();openPanel(tab===shortcut?'mine':shortcut);}
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden){pressBlasts=[];rockFragments=[];stopAuto();if(qte)finish(false,'หยุดการขุดเมื่อสลับหน้าต่าง');}});
 $('#export').onclick=()=>{let u=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=u;a.download='deepfield-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};
@@ -330,7 +326,7 @@ function drawRockFragments(now){
 function updateSwing(now){
  for(const strike of pendingImpacts){
   if(now-strike.start<320||strike.impacted)continue;
-  strike.impacted=true;flash=Math.max(flash,strike.critical?1:.4);
+  strike.impacted=true;if(strike.loot?.rockBroken){sector=state.sector;dropSector=sector;rings=[];nextRingAt=now;render();}flash=Math.max(flash,strike.critical?1:.4);
   const tip=[strike.aim.x*W,strike.aim.y*H];
   if(strike.loot?.ore){spawnRockFragments(tip,now,!!strike.loot.rockBroken);SoundFX.play('impact',strike.critical||strike.loot.rockBroken);spawnLootEffects(strike.loot,tip,now);}
   for(let i=0;i<(strike.critical?48:22);i++)particles.push({x:tip[0],y:tip[1],vx:(Math.random()-.5)*(strike.critical?15:9),vy:-2-Math.random()*7,life:1,color:i%3?strike.color:'#f7f9d0'});

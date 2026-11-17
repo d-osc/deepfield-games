@@ -15,12 +15,10 @@ const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path'),asse
  async function until(check){for(let i=0;i<200;i++){if(check())return;await new Promise(resolve=>setTimeout(resolve,10));}throw Error('Production bundle timed out');}
  await until(()=>node('#playercard').innerHTML.includes('Lv.1'));assert.equal(errors.length,0);
  const click=dataset=>{for(const handler of events.click??[])handler({target:{closest:()=>({dataset})}});};
- click({tab:'map'});assert.equal(node('#game-window').hidden,false);assert.equal((node('#deposits').innerHTML.match(/data-rate=/g)||[]).length,50);
- click({action:'unlock',id:'1'});click({sector:'1'});assert.equal(node('#rockname').textContent,box.Mining.mines[1].name);
  click({tab:'mine'});frameCallback(0);assert(node('#prompt').innerHTML.includes('qte'));
  const ringMarkup=node('#prompt').innerHTML,position=ringMarkup.match(/left:([\d.]+)%;top:([\d.]+)%/);assert(position);
  now=100;for(const handler of events.pointerdown)handler({isTrusted:true,isPrimary:true,button:0,clientX:Number(position[1])*9,clientY:Number(position[2])*4.3,target:{closest:selector=>selector==='.scene'?node('.scene'):null},preventDefault(){}});
  await until(()=>{try{return JSON.parse(values.get('deepfield-v1')).blocks?.at(-1).data.pending===null;}catch{return false;}});
- const saved=JSON.parse(values.get('deepfield-v1'));assert.equal(saved.format,'deepfield-local-chain');assert.equal(saved.blocks.at(-1).data.sector,1);assert.equal(errors.length,0);
+ const saved=JSON.parse(values.get('deepfield-v1'));assert.equal(saved.format,'deepfield-local-chain');assert.equal(saved.blocks.at(-1).data.sector,0);assert.equal(errors.length,0);
  assert(node('#playercard').innerHTML.includes('Lv.'));console.log('PASS: production bundle startup, migration, map, unlock/travel, mining and hash-chain save; no original JS or source maps published');
 })().catch(error=>{console.error(error);process.exitCode=1;});
