@@ -1,0 +1,68 @@
+DEEPFIELD — Proprietary, Non-Commercial, No-Copying, No-Derivatives License
+Copyright (c) 2026 d-osc and the respective copyright holders.
+All rights reserved.
+
+1. Scope
+
+This license applies to the original DEEPFIELD source code, game design,
+documentation, and other original project material (the "Project"). Making
+the Project available for viewing does not make it open-source software.
+
+2. Permitted use
+
+You may access and play the unmodified game through an official deployment
+provided by the copyright holder, solely for personal, non-commercial use.
+Only transient technical copies strictly necessary for that access and play
+are permitted. Exporting and importing your own game-save data is permitted.
+
+3. Restrictions
+
+Without the copyright holder's prior written permission, you must not:
+
+- Use the Project, in whole or in part, to generate revenue or for any
+  commercial purpose, including sale, rental, paid access, advertising,
+  sponsorship, or inclusion in a commercial product or service.
+- Copy, reproduce, redistribute, republish, mirror, rehost, sublicense,
+  or otherwise distribute the Project or any portion of it.
+- Modify, adapt, translate, alter, or create derivative works from the
+  Project, in whole or in part.
+- Remove or alter copyright notices, license notices, or attribution.
+
+No rights are granted except those expressly stated here. Any use beyond
+the limited permission above requires prior written permission from the
+copyright holder.
+
+4. Third-party material and platform requirements
+
+Third-party assets are excluded from these restrictions and remain subject
+to their own licenses. In particular, the Kenney Nature Kit assets and the
+OpenGameArt mineral/gem icons included in this repository are CC0 material.
+Their original terms and notices are preserved in assets/kenney/ and
+assets/ores/. This license does not revoke, restrict, or relicense rights
+granted by those third-party licensors.
+
+This license does not restrict rights that cannot lawfully be excluded,
+or the minimum rights expressly required by the applicable hosting
+platform's terms for hosting and displaying the Project. Those rights do
+not grant permission to commercialize or modify the Project beyond their
+applicable scope.
+
+5. Disclaimer and termination
+
+THE PROJECT IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, AND NON-INFRINGEMENT. TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE
+COPYRIGHT HOLDERS ARE NOT LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY
+ARISING FROM THE PROJECT OR ITS USE.
+
+The limited permission in Section 2 terminates automatically if you breach
+this license. All other rights remain reserved to their respective holders.
+
+สรุปภาษาไทย (เพื่อความเข้าใจ; ใช้ข้อความภาษาอังกฤษข้างต้นเป็นหลัก)
+
+อนุญาตให้เล่นเกมต้นฉบับผ่านช่องทางทางการเพื่อใช้ส่วนตัวโดยไม่หารายได้เท่านั้น
+ห้ามนำเกมหรือส่วนหนึ่งส่วนใดไปหารายได้ ใช้เชิงพาณิชย์ คัดลอก แจกจ่าย
+เผยแพร่ซ้ำ โฮสต์ซ้ำ แก้ไข หรือดัดแปลง โดยไม่ได้รับอนุญาตเป็นลายลักษณ์อักษร
+ยกเว้นสำเนาชั่วคราวที่จำเป็นต่อการเปิดเล่นและสิทธิ์ขั้นต่ำตามกฎหมายหรือ
+ข้อกำหนดของแพลตฟอร์ม การส่งออกและนำเข้าเซฟของตนเองทำได้
+แอสเซ็ตของบุคคลที่สามยังอยู่ภายใต้สิทธิ์เดิมของเจ้าของ ไม่อยู่ภายใต้ข้อห้ามนี้

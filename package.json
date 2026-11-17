@@ -1,0 +1,10 @@
+{
+  "name": "deepfield-offline-mining",
+  "private": true,
+  "version": "0.2.0",
+  "description": "Offline mining game with player progression, timed mining and a local save",
+  "scripts": {
+    "build": "node scripts/build-pages.mjs",
+    "test": "node test.cjs && node progression.test.cjs && node ui.test.cjs"
+  }
+}
