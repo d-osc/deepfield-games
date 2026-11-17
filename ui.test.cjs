@@ -41,6 +41,13 @@ click({tab:'mine'});run('stopAuto();pendingImpacts=[];nextRingAt=1e9;begin(5000)
 run('state.player.energy=0;stopAuto();tickRings(11000);nextRingAt=1e9');now=run('rings[0].start+rings[0].duration*85/110');const noEnergyHits=run('state.hits');tap();assert.equal(run('state.hits'),noEnergyHits);assert.equal(run('rings.length'),1);
 run('state.player.energy=M.maxEnergy(state);state.tools[0].dur=0');tap();assert.equal(run('state.hits'),noEnergyHits);
 run('state.tools[0].dur=40;stopAuto();swing=null');const aimBefore=run('JSON.stringify(projectTool(pickaxePoint([0,0,0],0,0)))');for(const h of events.pointermove)h({clientX:800,clientY:100,isPrimary:true,target:{closest:()=>node('.scene')}});assert.notEqual(run('JSON.stringify(projectTool(pickaxePoint([0,0,0],0,0)))'),aimBefore);
+// Equip by item ID (not inventory index): live mining mesh and HUD change together.
+const equipmentFixture=run('JSON.stringify(state)');
+run('state.tools=[{id:5,type:0,level:1,dur:40},{id:9,type:2,level:1,dur:120}];state.nextId=10;state.equipped=5;state.pending=null');
+const oldMesh=run('JSON.stringify(pickaxeMesh(0,0))');
+click({action:'equip',id:'9'});assert.equal(run('M.tool(state).id'),9);assert.notEqual(run('JSON.stringify(pickaxeMesh(0,0))'),oldMesh);assert(node('#toolcard').innerHTML.includes(run('M.types[2].name')));assert(run('pickaxeMesh(0,0).some(face=>face.color===M.types[2].color)'));assert(run('pickaxeMesh(0,0).some(face=>face.color===M.types[2].handle)'));
+click({action:'equip',id:'5'});assert.equal(run('JSON.stringify(pickaxeMesh(0,0))'),oldMesh);
+run(`state=JSON.parse(${JSON.stringify(equipmentFixture)})`);
 // All mine scenes, tools and ring boundaries still render across viewports.
 run('state.unlocked=M.mines.map((m,i)=>i)');for(let i=0;i<50;i++){run(`sector=state.sector=${i};render()`);assert.equal(node('#rockname').textContent,run(`M.mines[${i}].name`));}
 for(let i=0;i<100;i++)run(`state.tools[0].type=${i};state.tools[0].dur=M.types[${i}].dur;tab='upgrade';renderStore();drawPickaxe(100)`);

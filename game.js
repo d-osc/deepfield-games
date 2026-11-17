@@ -90,7 +90,7 @@ document.addEventListener('click',e=>{
  if(b.dataset.tab){openPanel(b.dataset.tab,b.dataset.openBag);return;}
  if(b.dataset.action){
   let a=b.dataset.action,id=a==='sellOre'?b.dataset.id:+b.dataset.id;
-  if(M.action(state,a,id)){save();render();if(a==='unlock')toast('ปลดล็อก'+M.mines[id].name+'แล้ว');else if(a==='eat')toast('กิน'+M.foods[id].name+'แล้ว');else if(a==='buyFood')toast('ซื้อ'+M.foods[id].name+'แล้ว');else if(a==='buy')toast('ซื้อ'+M.types[id].name+'แล้ว');else toast('ทำรายการเรียบร้อย');}
+  if(M.action(state,a,id)){if(a==='equip'){swing=null;stopAuto();}save();render();if(a==='unlock')toast('ปลดล็อก'+M.mines[id].name+'แล้ว');else if(a==='eat')toast('กิน'+M.foods[id].name+'แล้ว');else if(a==='buyFood')toast('ซื้อ'+M.foods[id].name+'แล้ว');else if(a==='equip')toast('สวมใส่ '+M.types[M.tool(state).type].name+' แล้ว');else if(a==='buy')toast('ซื้อ'+M.types[id].name+'แล้ว');else toast('ทำรายการเรียบร้อย');}
   else toast('ทำรายการไม่ได้ • ตรวจสอบเงิน วัตถุดิบ หรือกำลัง');
  }
 });
@@ -214,19 +214,27 @@ function pickaxePoint(p,angle,lift){
  let rx=x*c-y*s,ry=x*s+y*c;
  return [2.8+rx*Math.cos(yaw)+z*Math.sin(yaw),-3.2+ry+lift,-2.5-rx*Math.sin(yaw)+z*Math.cos(yaw)];
 }
+const pickaxeMaterials=new Map();
+function pickaxeMaterial(type){
+ if(pickaxeMaterials.has(type))return pickaxeMaterials.get(type);
+ const design=M.types[type];
+ const shade=(hex,factor)=>'#'+hex.slice(1).match(/../g).map(part=>Math.min(255,Math.round(parseInt(part,16)*factor)).toString(16).padStart(2,'0')).join('');
+ const material={metal:[design.color,shade(design.color,.55),shade(design.color,1.15),shade(design.color,.8)],handle:[design.handle,shade(design.handle,.6),design.handle,shade(design.handle,.8)],grip:[shade(design.handle,.5),shade(design.handle,.35),shade(design.handle,.7),shade(design.handle,.45)]};
+ pickaxeMaterials.set(type,material);return material;
+}
 function pickaxeMesh(angle,lift){
- const faces=[],type=M.tool(state).type,design=M.types[type];
+ const equipped=M.tool(state),faces=[],type=equipped.type,material=pickaxeMaterial(type);
  function prism(outline,depth,palette){
   let front=outline.map(([x,y])=>pickaxePoint([x,y,-depth],angle,lift));
   let back=outline.map(([x,y])=>pickaxePoint([x,y,depth],angle,lift));
   faces.push({p:front,color:palette[0]},{p:back,color:palette[1]});
   for(let i=0;i<outline.length;i++){let j=(i+1)%outline.length;faces.push({p:[front[i],front[j],back[j],back[i]],color:palette[2+i%2]});}
  }
- prism([[-.15,-.4],[.15,-.4],[.15,3.7],[-.15,3.7]],.14,[design.handle,'#39433b',design.handle,'#60543d']);
- prism([[-.21,.1],[.21,.1],[.21,1.1],[-.21,1.1]],.18,['#35423f','#1b2926','#687467','#27372f']);
- const metal=[design.color,'#445d56','#edf6e5',design.color];
+ prism([[-.15,-.4],[.15,-.4],[.15,3.7],[-.15,3.7]],.14,material.handle);
+ prism([[-.21,.1],[.21,.1],[.21,1.1],[-.21,1.1]],.18,material.grip);
+ const metal=material.metal;
  prism(pickaxeHead(type),.25,metal);
- prism([[-.27,3.35],[.27,3.35],[.27,3.95],[-.27,3.95]],.31,['#b7a16f','#645335','#ead49c','#8a764e']);
+ prism([[-.27,3.35],[.27,3.35],[.27,3.95],[-.27,3.95]],.31,material.metal);
  return faces.sort((a,b)=>b.p.reduce((v,p)=>v+p[2],0)/b.p.length-a.p.reduce((v,p)=>v+p[2],0)/a.p.length);
 }
 function swingPose(now){
