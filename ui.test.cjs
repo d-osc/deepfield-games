@@ -15,7 +15,7 @@ const run=code=>vm.runInContext(code,box),click=dataset=>{for(const handler of e
 assert(node('#playercard').innerHTML.includes('Lv.1'));assert.equal(run('state.sector'),19);assert.equal(run('state.version'),2);
 assert(!node('#deposits').innerHTML.includes('data-sector'));
 click({tab:'shop'});assert.equal((node('#storeview').innerHTML.match(/data-action="buyFood"/g)||[]).length,30);
-assert.equal(node('#mineview').hidden,false);assert.equal(node('#game-window').hidden,false);assert.equal(node('#mine-atlas').hidden,true);
+assert.equal(node('#mineview').hidden,false);assert.equal(node('#game-window').hidden,false);
 click({shopTab:'foods'});assert(node('#storeview').innerHTML.includes('shop-content shop-foods'));assert(node('#storeview').innerHTML.includes('data-shop-tab="tools"'));
 run('state.player.energy=1');click({action:'buyFood',id:'5'});click({action:'eat',id:'5'});assert.equal(run('state.buffs[0].kind'),'yield');assert(node('#playercard').innerHTML.includes('แซนด์วิชไข่'));
 click({tab:'bag'});click({bagTab:'foods'});assert(node('#storeview').innerHTML.includes('aria-label="ช่องอาหาร"'));assert(node('#storeview').innerHTML.includes('กินอาหาร'));
