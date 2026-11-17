@@ -1,5 +1,5 @@
 const M=Mining,$=s=>document.querySelector(s);let state=M.fresh(),tab='mine',bagTab='ores',sector=0,qte=null,logs=[],particles=[],flash=0,swing=null,lastFrame=0,frameStep=1,lootDrops=[],lootBursts=[],lootBannerUntil=0,lootArrivalUntil=0;
-let autoMining=false,pressBlasts=[];
+let autoMining=false,pressBlasts=[],rockFragments=[];
 const reducedEffects=globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches??false;
 $('#sound-toggle').onclick=()=>{const enabled=SoundFX.toggle();$('#sound-toggle').textContent=enabled?'🔊':'🔇';$('#sound-toggle').setAttribute?.('aria-pressed',String(enabled));$('#sound-toggle').setAttribute?.('aria-label',enabled?'ปิดเสียง':'เปิดเสียง');};
 let loadFailed=false;
@@ -27,7 +27,7 @@ function renderRates(){
 document.addEventListener('change',e=>{if(e.target.id==='drop-quality'){dropQuality=+e.target.value;renderRates();}});
 function renderMineBrowser(){
  $('#minecount').textContent=`${state.unlocked.length} / ${M.mines.length} เหมืองปลดล็อกแล้ว`;
- const location=M.mines[sector];$('#deposit-preview').innerHTML=location.drops.map(id=>{const o=M.ores.find(o=>o.id===id);return `<img src="assets/ores/${o.icon}" alt="${o.name}" width="24" height="24">`;}).join('');$('#rockname').textContent=location.name;$('#sectorlabel').textContent=`SECTOR ${String(sector+1).padStart(2,'0')} / ${location.code}`;$('#depth').textContent=`ความลึก ${location.depth} m`;
+ const location=M.mines[sector];$('#deposit-preview').innerHTML=location.drops.map(id=>{const o=M.ores.find(o=>o.id===id);return `<img src="assets/ores/${o.icon}" alt="${o.name}" width="24" height="24">`;}).join('');$('#rockname').textContent=location.name;const rockHP=state.rockHealth?.[sector]??M.rockMax(sector);$('#rock-health-text').textContent=`ความทนทานหิน ${rockHP} / ${M.rockMax(sector)}`;$('#rock-health-fill').style.width=rockHP/M.rockMax(sector)*100+'%';$('#sectorlabel').textContent=`SECTOR ${String(sector+1).padStart(2,'0')} / ${location.code}`;$('#depth').textContent=`ความลึก ${location.depth} m`;
  if(tab==='mine')$('#viewtitle').textContent=location.name;
  const d=M.debuff(state);$('#criticalinfo').textContent=`คุณภาพ 100%: เพชร ${((M.dropRates(state,sector,100).find(r=>r.ore.id==='diamond')?.chance||0)*100).toFixed(1)}% • ${d.name}: ${d.description} (หลังบัฟ ${d.value.toFixed(1)}%)`;
  $('#deposits').innerHTML=M.mines.map((mine,i)=>{
@@ -109,6 +109,7 @@ function finish(quality,reason,playerInput=false){
  if(!qte)return;const percent=playerInput?(typeof quality==='boolean'?(quality?100:0):quality):0;const target=qte;qte=null;$('#prompt').innerHTML='';let result=M.mine(state,percent,sector);if(!result)return;
  if(!document.hidden){spawnPressBlast(target,result.quality,performance.now());SoundFX.play(result.ore?'press':'miss',result.critical);}
  let msg=result.ore?`${result.critical?'✦ PERFECT! ':''}${result.quality}% • ${result.ore.name} +${result.amount}`:'0% • ขุดพลาด ไม่ได้รับแร่';
+ if(result.rockBroken)msg+=' • หินแตก! หินก้อนใหม่พร้อมขุด';if(result.unlockedMine!==null&&result.unlockedMine!==undefined)msg+=' • ปลดล็อก '+M.mines[result.unlockedMine].name;
  if(result.bonus)msg+=` • โบนัส ${result.bonus.name} +1`;if(result.triggered)msg+=` • ✦ ${result.effect.name}`;if(reason)msg+=' • '+reason;msg+=` • EXP +${result.xp}`;if(result.levels)msg+=` • LEVEL UP! Lv.${state.player.level}`;
  toast(msg);logs.unshift(msg);swing={start:performance.now(),critical:result.critical,color:result.ore?.color||'#889b90',impacted:false,loot:result};if(autoMining&&(M.tool(state).dur===0||state.player.energy<M.energyCost(state)))stopAuto();if(M.tool(state).dur===0)toast(msg+' • อีเตอร์พังแล้ว ไปซ่อมได้ที่ร้านซ่อม');save();render();
 }
@@ -126,16 +127,16 @@ document.addEventListener('keydown',e=>{
  if(qte)return;
  const shortcut={b:'bag',m:'map',c:'shop',r:'repair',u:'upgrade'}[e.key.toLowerCase()];if(shortcut){e.preventDefault();openPanel(tab===shortcut?'mine':shortcut);}
 });
-document.addEventListener('visibilitychange',()=>{if(document.hidden){pressBlasts=[];stopAuto();if(qte)finish(false,'หยุดการขุดเมื่อสลับหน้าต่าง');}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){pressBlasts=[];rockFragments=[];stopAuto();if(qte)finish(false,'หยุดการขุดเมื่อสลับหน้าต่าง');}});
 $('#export').onclick=()=>{let u=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=u;a.download='deepfield-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};
-$('#import').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{if(f.size>100000)throw Error();let s=M.migrate(JSON.parse(await f.text()));if(!M.valid(s))throw Error();if(!confirm('นำเข้าเซฟนี้แทนความคืบหน้าปัจจุบัน?'))return;if(qte){qte=null;$('#prompt').innerHTML='';}stopAuto();pressBlasts=[];state=s;sector=state.sector;dropSector=sector;logs=[];lootDrops=[];lootBursts=[];lootBannerUntil=0;$('#loot-banner').hidden=true;save();render();toast('นำเข้าเซฟเรียบร้อย');}catch{alert('ไฟล์เซฟไม่ถูกต้อง');}finally{e.target.value='';}};
+$('#import').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{if(f.size>100000)throw Error();let s=M.migrate(JSON.parse(await f.text()));if(!M.valid(s))throw Error();if(!confirm('นำเข้าเซฟนี้แทนความคืบหน้าปัจจุบัน?'))return;if(qte){qte=null;$('#prompt').innerHTML='';}stopAuto();pressBlasts=[];rockFragments=[];state=s;sector=state.sector;dropSector=sector;logs=[];lootDrops=[];lootBursts=[];lootBannerUntil=0;$('#loot-banner').hidden=true;save();render();toast('นำเข้าเซฟเรียบร้อย');}catch{alert('ไฟล์เซฟไม่ถูกต้อง');}finally{e.target.value='';}};
 // Perspective-projected low-poly cave, rendered locally with no network assets.
 const canvas=$('#world'),ctx=canvas.getContext('2d');let W=800,H=430,dpr=1;function resize(){dpr=Math.min(devicePixelRatio||1,2);W=canvas.clientWidth;H=canvas.clientHeight;canvas.width=W*dpr;canvas.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);}new ResizeObserver(resize).observe(canvas);
 let seed=42;function rand(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;}const stones=Array.from({length:42},()=>({x:(rand()-.5)*26,y:rand()*1.2-2.5,z:rand()*22+4,s:.4+rand()*2}));
 function project(p){let z=p[2]+13;return[W/2+p[0]*W*.8/z,H*.38-p[1]*W*.8/z];}
 function poly(points,color){ctx.beginPath();points.map(project).forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fillStyle=color;ctx.fill();}
 function rock(x,y,z,s,color){let a=[x-s,y,z-s],b=[x+s,y,z-s],c=[x+s*.9,y,z+s],d=[x-s,y,z+s],top=[x-s*.2,y+s*1.6,z],l=[x-s*.7,y+s*.7,z-s*.7],r=[x+s*.7,y+s*.8,z-s*.4];poly([d,c,top],color[0]);poly([a,d,top,l],color[1]);poly([b,a,l,r],color[2]);poly([c,b,r,top],color[3]);poly([l,top,r],color[4]);}
-function frame(now){frameStep=Math.min(2.5,(now-(lastFrame||now-16.67))/16.67);lastFrame=now;updateSwing(now);ctx.clearRect(0,0,W,H);let bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,M.mines[sector].bg);bg.addColorStop(1,M.mines[sector].floor);ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);poly([[-30,-3,0],[30,-3,0],[30,-3,50],[-30,-3,50]],M.mines[sector].floor);for(let i=0;i<8;i++){let x=(i-3.5)*6;rock(x,-3,27,4,['#152724','#1a2c27','#22362c','#112420','#304235']);}for(const r of [...stones].sort((a,b)=>b.z-a.z))rock(r.x,r.y,r.z,r.s,['#34493b','#2b3b32','#405442','#253b32','#4a5d46']);let shake=impactShake(now);ctx.save();ctx.translate(shake,shake*.4);drawMiningBoulder();ctx.restore();drawPickaxe(now);let glow=ctx.createRadialGradient(W*.5,H*.45,0,W*.5,H*.45,W*.45);glow.addColorStop(0,'#c9e88b0c');glow.addColorStop(1,'#00000080');ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);for(let i=0;i<22;i++){let x=(i*137.5+Math.sin(now*.0002+i)*20)%W,y=(i*51-now*.012)%H;if(y<0)y+=H;ctx.fillStyle='#e2efbc33';ctx.fillRect(x,y,2,2);}for(let p of particles){p.x+=p.vx*frameStep;p.y+=p.vy*frameStep;p.vy+=.12*frameStep;p.life-=.025*frameStep;ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,4,4);}particles=particles.filter(p=>p.life>0);ctx.globalAlpha=1;if(flash>0){ctx.fillStyle=`rgba(211,255,163,${flash*.15})`;ctx.fillRect(0,0,W,H);flash=Math.max(0,flash-.025*frameStep);}drawLootEffects(now);drawPressBlasts(now);if(qte){let p=(now-qte.start)/qte.duration;if(p>=1)finish(false,'หมดเวลา');else{let ring=$('.ring');if(ring){let size=150-110*p;ring.style.width=ring.style.height=size+'px';let quality=M.score(p);ring.style.borderColor=quality===100?'#c4f589':'#ffffff';const score=$('.qte-score');if(score)score.textContent=quality+'%';}}}if(autoMining&&!document.hidden&&tab==='mine'&&!qte&&!swing)begin();requestAnimationFrame(frame);}
+function frame(now){frameStep=Math.min(2.5,(now-(lastFrame||now-16.67))/16.67);lastFrame=now;updateSwing(now);ctx.clearRect(0,0,W,H);let bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,M.mines[sector].bg);bg.addColorStop(1,M.mines[sector].floor);ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);poly([[-30,-3,0],[30,-3,0],[30,-3,50],[-30,-3,50]],M.mines[sector].floor);for(let i=0;i<8;i++){let x=(i-3.5)*6;rock(x,-3,27,4,['#152724','#1a2c27','#22362c','#112420','#304235']);}for(const r of [...stones].sort((a,b)=>b.z-a.z))rock(r.x,r.y,r.z,r.s,['#34493b','#2b3b32','#405442','#253b32','#4a5d46']);let shake=impactShake(now);ctx.save();ctx.translate(shake,shake*.4);if(swing?.impacted&&swing.loot?.rockBroken){const growth=Math.max(0,Math.min(1,(now-swing.start-550)/300));const center=project([0,-1,2]);ctx.translate(...center);ctx.scale(growth,growth);ctx.translate(-center[0],-center[1]);}drawMiningBoulder();ctx.restore();drawPickaxe(now);let glow=ctx.createRadialGradient(W*.5,H*.45,0,W*.5,H*.45,W*.45);glow.addColorStop(0,'#c9e88b0c');glow.addColorStop(1,'#00000080');ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);for(let i=0;i<22;i++){let x=(i*137.5+Math.sin(now*.0002+i)*20)%W,y=(i*51-now*.012)%H;if(y<0)y+=H;ctx.fillStyle='#e2efbc33';ctx.fillRect(x,y,2,2);}for(let p of particles){p.x+=p.vx*frameStep;p.y+=p.vy*frameStep;p.vy+=.12*frameStep;p.life-=.025*frameStep;ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,4,4);}particles=particles.filter(p=>p.life>0);ctx.globalAlpha=1;if(flash>0){ctx.fillStyle=`rgba(211,255,163,${flash*.15})`;ctx.fillRect(0,0,W,H);flash=Math.max(0,flash-.025*frameStep);}drawLootEffects(now);drawRockFragments(now);drawPressBlasts(now);if(qte){let p=(now-qte.start)/qte.duration;if(p>=1)finish(false,'หมดเวลา');else{let ring=$('.ring');if(ring){let size=150-110*p;ring.style.width=ring.style.height=size+'px';let quality=M.score(p);ring.style.borderColor=quality===100?'#c4f589':'#ffffff';const score=$('.qte-score');if(score)score.textContent=quality+'%';}}}if(autoMining&&!document.hidden&&tab==='mine'&&!qte&&!swing)begin();requestAnimationFrame(frame);}
 // Imported Kenney Nature Kit OBJ meshes, bundled locally under CC0.
 function stoneNoise(n){let v=Math.sin(n*127.1+311.7)*43758.5453;return v-Math.floor(v);}
 const rockMeshes=M.mines.map((mine,index)=>{
@@ -276,14 +277,24 @@ function drawPressBlasts(now){
    ctx.globalAlpha=(1-t)*.14;ctx.beginPath();ctx.arc(0,0,r*.8,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1-t;
    for(let i=0;i<(blast.perfect?16:10);i++){const angle=i*Math.PI*2/(blast.perfect?16:10),inner=r*(.65+.1*Math.sin(i*7)),outer=inner+14*(1-t);ctx.beginPath();ctx.moveTo(Math.cos(angle)*inner,Math.sin(angle)*inner);ctx.lineTo(Math.cos(angle)*outer,Math.sin(angle)*outer);ctx.stroke();}
   }
-  ctx.font=blast.perfect?'bold 20px sans-serif':'bold 15px sans-serif';ctx.textAlign='center';ctx.fillText(blast.perfect?'PERFECT!':blast.quality+'%',0,-r-10);ctx.restore();
+  ctx.font=`bold ${Math.max(38,Math.min(68,W*.065))}px sans-serif`;ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='#102219';ctx.strokeText(blast.quality+'%',0,-12);ctx.fillText(blast.quality+'%',0,-12);if(blast.perfect){ctx.font='bold 18px sans-serif';ctx.fillText('PERFECT!',0,18);}ctx.restore();
  }
  pressBlasts=pressBlasts.filter(blast=>now-blast.start<600);
+}
+function spawnRockFragments(tip,now,broken){
+ const count=reducedEffects?5:broken?48:14;
+ for(let i=0;i<count;i++){const angle=i*2.399,velocity=(broken?80:35)+Math.random()*(broken?160:85);rockFragments.push({x:tip[0]/W,y:tip[1]/H,vx:Math.cos(angle)*velocity,vy:Math.sin(angle)*velocity-100,start:now,duration:broken?950:600,size:(broken?8:3)+Math.random()*(broken?16:7),rotation:Math.random()*6,shade:i%3===0?'#b3a28a':i%3===1?'#6d7864':'#455448'});}
+ rockFragments=rockFragments.slice(-120);
+}
+function drawRockFragments(now){
+ for(const f of rockFragments){const elapsed=now-f.start,t=elapsed/f.duration;if(t<0||t>=1)continue;const seconds=elapsed/1000;
+ ctx.save();ctx.translate(f.x*W+f.vx*seconds,f.y*H+f.vy*seconds+240*seconds*seconds);ctx.rotate(f.rotation+seconds*4);ctx.globalAlpha=1-t;ctx.fillStyle=f.shade;ctx.strokeStyle='#26362b';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-f.size*.6,-f.size*.4);ctx.lineTo(f.size*.4,-f.size*.6);ctx.lineTo(f.size*.65,f.size*.2);ctx.lineTo(-f.size*.2,f.size*.65);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();}
+ rockFragments=rockFragments.filter(f=>now-f.start<f.duration);
 }
 function updateSwing(now){if(!swing)return;let elapsed=now-swing.start;
  if(elapsed>=320&&!swing.impacted){swing.impacted=true;flash=swing.critical?1:.4;
   let tip=project(pickaxePoint([-2,3.1,-.25],-.55,0));
-  if(swing.loot?.ore){SoundFX.play('impact',swing.critical);}
+  if(swing.loot?.ore){spawnRockFragments(tip,now,!!swing.loot.rockBroken);SoundFX.play('impact',swing.critical||swing.loot.rockBroken);}
   if(swing.loot?.ore)spawnLootEffects(swing.loot,tip,now);
   for(let i=0;i<(swing.critical?48:22);i++)particles.push({x:tip[0],y:tip[1],vx:(Math.random()-.5)*(swing.critical?15:9),vy:-2-Math.random()*7,life:1,color:i%3?swing.color:'#f7f9d0'});
  }

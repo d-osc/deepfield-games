@@ -43,6 +43,7 @@ run("lootDrops=[];lootBursts=[];spawnLootEffects({ore:M.ores[1],amount:7,bonus:M
 assert(node('#loot-banner').innerHTML.includes('ทองแดง'));assert(node('#loot-banner').innerHTML.includes('เพชร'));assert(node('#loot-banner').innerHTML.includes('PERFECT DROP'));assert(run('lootDrops.length')>0);
 run('drawLootEffects(5200)');assert(drawn>0);run('drawLootEffects(9000)');assert.equal(run('lootDrops.length'),0);assert.equal(run('lootBursts.length'),0);assert.equal(node('#loot-banner').hidden,true);assert.equal(run('JSON.stringify(state.ores)'),inventoryBefore);
 run("tab='mine';qte=null;swing=null;state.tools[0].type=0;state.tools[0].dur=40;state.sector=sector=0;state.player.energy=M.maxEnergy(state);begin();finish(0)");now+=400;run(`frame(${now})`);assert.equal(run('lootDrops.length'),0);
+run('rockFragments=[];spawnRockFragments([450,200],0,true)');assert(run('rockFragments.length>0'));run('drawRockFragments(2000)');assert.equal(run('rockFragments.length'),0);
 run('drawPressBlasts(1e9)');assert.equal(run('pressBlasts.length'),0);node('#sound-toggle').onclick();assert.equal(node('#sound-toggle').textContent,'🔇');node('#sound-toggle').onclick();assert.equal(node('#sound-toggle').textContent,'🔊');
 // Slower WASD-only manual controls, physical key codes and auto lifecycle.
 run("tab='mine';qte=null;swing=null;state.pending=null;state.tools[0].dur=40;state.player.energy=M.maxEnergy(state)");

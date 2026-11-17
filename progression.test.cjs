@@ -60,3 +60,17 @@ for(const sector of [0,1,2,3,4]){
  if(kind==='speed')assert(G.timingFactor(b)>G.timingFactor(a));
 }
 console.log('PASS: levels/energy, 100 tool costs and lifecycles, QTE quality, 30 foods, buffs, 50 debuffs/unlocks, exact drop tables, migration and invalid saves');
+// Rock durability, break/unlock/reset and legacy-save compatibility.
+{
+ const rockState=G.fresh(),max=G.rockMax(0);assert.equal(rockState.rockHealth[0],max);
+ assert(G.startMining(rockState).ok);G.mine(rockState,0);assert.equal(rockState.rockHealth[0],max);assert.deepEqual(rockState.unlocked,[0]);
+ assert(G.startMining(rockState).ok);const damage=G.mine(rockState,100);assert(damage.rockDamage>0);assert.equal(rockState.rockHealth[0],max-damage.rockDamage);
+ const persisted=G.migrate(JSON.parse(JSON.stringify(rockState)));assert.equal(persisted.rockHealth[0],rockState.rockHealth[0]);
+ rockState.rockHealth[0]=1;assert(G.startMining(rockState).ok);const broken=G.mine(rockState,100);assert(broken.rockBroken);assert.equal(broken.unlockedMine,1);assert(rockState.unlocked.includes(1));assert.equal(rockState.sector,0);assert.equal(rockState.rockHealth[0],max);
+ assert.equal(G.mine(rockState,100),null);assert.equal(rockState.unlocked.filter(i=>i===1).length,1);
+ assert(G.action(rockState,'travel',1));rockState.rockHealth[1]=3;assert(G.action(rockState,'travel',0));assert.equal(rockState.rockHealth[0],max);assert.equal(rockState.rockHealth[1],3);
+ const last=ready(0,49);last.rockHealth[49]=1;assert(G.startMining(last).ok);const final=G.mine(last,100);assert(final.rockBroken);assert.equal(final.unlockedMine,null);assert.equal(last.rockHealth[49],G.rockMax(49));assert(G.valid(last));
+ const legacy=G.fresh();delete legacy.rockHealth;assert(G.valid(legacy));assert.deepEqual(G.migrate(legacy).rockHealth,G.fresh().rockHealth);
+ for(const hp of [-1,0,1.5,Infinity,G.rockMax(0)+1]){const invalid=G.fresh();invalid.rockHealth[0]=hp;assert(!G.valid(invalid));}
+ console.log('PASS: rock damage, miss without damage, break/reset, next-mine unlock, per-mine persistence, last mine and migration');
+}
