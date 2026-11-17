@@ -31,6 +31,11 @@ let html=await readFile(path.join(root,'index.html'),'utf8');
 html=html.replace(/<script\b[^>]*\bsrc="[^"]+"[^>]*><\/script>/g,'');
 const revision=createHash('sha256').update(protectedCode).digest('hex').slice(0,12);
 html=html.replace('</body>',`<script defer src="game.bundle.js?v=${revision}"></script></body>`);
+for(const name of ['style.css','game-ui.css']){
+ const css=await readFile(path.join(output,name),'utf8');
+ const cssRevision=createHash('sha256').update(css).digest('hex').slice(0,12);
+ html=html.replace(`href="${name}"`,`href="${name}?v=${cssRevision}"`);
+}
 await writeFile(path.join(output,'index.html'),html);
 async function assets(from,to){
   await mkdir(to,{recursive:true});
@@ -40,5 +45,5 @@ async function assets(from,to){
   }
 }
 await assets(path.join(root,'assets'),path.join(output,'assets'));
-for(const [,ref]of html.matchAll(/(?:src|href)="([^"#]+\.(?:js|css|png|webmanifest))"/g))await readFile(path.join(output,ref));
+for(const [,ref]of html.matchAll(/(?:src|href)="([^"#]+\.(?:js|css|png|webmanifest))(?:\?[^"#]*)?"/g))await readFile(path.join(output,ref));
 console.log('Protected GitHub Pages build prepared at dist/ (single obfuscated JS bundle, no source maps or original scripts).');
