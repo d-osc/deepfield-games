@@ -23,7 +23,7 @@
 
 เลือกเหมือง แล้วกด W/A/S/D หรือปุ่มขุด จากนั้นกดปุ่ม W/A/S/D ตามที่แสดง รองรับตำแหน่งปุ่มเดิมแม้ใช้คีย์บอร์ดภาษาไทย หรือเปิดปุ่มขุด Auto เพื่อจับจังหวะให้อัตโนมัติ
 
-- วงบีบสุ่ม 2.2–3 วินาทีก่อนดีบัฟแรงสั่นสะเทือน โดยยังไม่ต่ำกว่า 1.2 วินาที
+- วงบีบสุ่ม 0.3–3 วินาทีก่อนดีบัฟแรงสั่นสะเทือน โดยยังไม่ต่ำกว่า 0.3 วินาที
 - กดถูกปุ่มตอนวงสีขาวทับเส้นเขียวได้ 100% (Perfect) กดก่อนหรือหลังคิดเปอร์เซ็นต์จากระยะห่างของเส้นวง
 - กดผิดปุ่ม ไม่กด หมดเวลา ยกเลิก หรือคุณภาพ 0% ไม่ได้แร่ ยังคงเสียกำลังและความทนทาน
 - คุณภาพลดจำนวนแร่และโอกาสเพชร พื้นฐานเพชรเท่ากับ `2% + 23% × (คุณภาพ/100)²` ก่อนเอฟเฟกต์อีเตอร์ อาหาร และดีบัฟ
@@ -70,4 +70,4 @@ Game icons and the 1200×630 social cover are stored in `assets/marketing/`. The
 
 Run `npm ci`, `npm test`, `npm run build`, then `npm run test:build`. Builds regenerate `dist/` and replace runtime sources with a minified, obfuscated `game.bundle.js`, without source maps. Original source files stay readable in the checkout. GitHub Pages installs locked dev dependencies before building and verifies the generated bundle. Obfuscation raises the effort of reading code; it cannot prevent browser downloads, copying images, reverse engineering, or client-side save manipulation. A public source repository still exposes the original code.
 
-Mining controls: W/A/S/D starts a manual attempt and the displayed W/A/S/D key resolves it. The ring lasts 1.2–3 seconds depending on mine timing effects. Auto repeatedly resolves attempts at the perfect ring position using normal energy and durability costs. It stops on insufficient energy, broken tools, Escape, opening a menu or hiding the page. Auto is session-only and does not resume from saves.
+Mining controls: W/A/S/D starts a manual attempt and the displayed W/A/S/D key resolves it. The ring lasts 0.3–3 seconds depending on mine timing effects. Auto repeatedly resolves attempts at the perfect ring position using normal energy and durability costs. It stops on insufficient energy, broken tools, Escape, opening a menu or hiding the page. Auto is session-only and does not resume from saves.

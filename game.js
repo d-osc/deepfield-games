@@ -99,7 +99,7 @@ document.addEventListener('click',e=>{
 $('#fullscreen').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen?.();else document.documentElement?.requestFullscreen?.().catch(()=>toast('เบราว์เซอร์นี้ไม่รองรับเต็มหน้าจอ'));};
 function begin(){
  if(qte||swing||tab!=='mine')return;const started=M.startMining(state,sector);if(!started.ok){stopAuto();toast(started.message);renderPlayer();return;}
- let key='WASD'[Math.floor(Math.random()*4)];qte={key,start:performance.now(),duration:Math.max(1200,Math.min(3000,(2200+Math.random()*800)*M.timingFactor(state,sector))),x:30+Math.random()*40,y:28+Math.random()*25};
+ let key='WASD'[Math.floor(Math.random()*4)];qte={key,start:performance.now(),duration:Math.max(300,Math.min(3000,(300+Math.random()*2700)*M.timingFactor(state,sector))),x:30+Math.random()*40,y:28+Math.random()*25};
  $('#prompt').innerHTML=`<div class="qte" style="left:${qte.x}%;top:${qte.y}%"><i class="target"></i><i class="ring"></i><b>${key}</b><small class="qte-score">0%</small></div>`;toast('กด '+key+' เมื่อวงสีขาวทับเส้นเขียว • ตรงเส้น 100%');save();render();
 }
 function finish(quality,reason){

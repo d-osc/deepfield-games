@@ -47,7 +47,7 @@ run("tab='mine';qte=null;swing=null;state.tools[0].type=0;state.tools[0].dur=40;
 run("tab='mine';qte=null;swing=null;state.pending=null;state.tools[0].dur=40;state.player.energy=M.maxEnergy(state)");
 const keydown=(key,code)=>{for(const h of events.keydown)h({key,code,target:{tagName:'BODY'},preventDefault(){}});};
 keydown(' ','Space');assert.equal(run('qte'),null);
-keydown('w','KeyW');assert(run('!!qte'));assert(run('qte.duration>=1200&&qte.duration<=3000'));assert('WASD'.includes(run('qte.key')));
+keydown('w','KeyW');assert(run('!!qte'));assert(run('qte.duration>=300&&qte.duration<=3000'));assert('WASD'.includes(run('qte.key')));
 keydown('x','KeyX');assert(run('!!qte'));
 const physical=run('qte.key');now=run('qte.start+qte.duration*(85/110)');keydown('ไ','Key'+physical);assert.equal(run('qte'),null);assert(node('#toast').textContent.includes('100%'));
 run('swing=null');node('#auto-mine').onclick();assert(run('autoMining'));assert(run('!!qte'));
