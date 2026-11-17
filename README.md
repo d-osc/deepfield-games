@@ -8,7 +8,7 @@
 
 ฉากเหมืองแสดงเต็มพื้นที่หน้าต่าง พร้อม HUD เลเวล/กำลังด้านซ้ายบน เงินและแร่ที่เก็บได้ด้านขวา อีเตอร์ที่สวมใส่ด้านซ้ายล่าง และแถบเมนูเกมด้านล่าง ร้านค้า กระเป๋า ซ่อม อัปเกรด และแผนที่เปิดเป็นหน้าต่างทับฉาก ปิดด้วย Escape หรือปุ่ม X ร้านค้าแยกหมวดขายแร่ อีเตอร์ และอาหาร
 
-ปุ่มลัด: Space ขุด, M แผนที่เหมือง, C ร้านค้า, R ซ่อม, U อัปเกรด, B กระเป๋า เมนูเซฟอยู่ที่ปุ่มเฟืองมุมขวาบน และมีปุ่มขยายเต็มหน้าจอ การเลือกเข้าเหมืองจากแผนที่จะปิดหน้าต่างและกลับไปขุดทันที
+ปุ่มลัด: W/A/S/D ขุด, M แผนที่เหมือง, C ร้านค้า, R ซ่อม, U อัปเกรด, B กระเป๋า เมนูเซฟอยู่ที่ปุ่มเฟืองมุมขวาบน และมีปุ่มขยายเต็มหน้าจอ การเลือกเข้าเหมืองจากแผนที่จะปิดหน้าต่างและกลับไปขุดทันที
 
 ## ผู้เล่นและกำลัง
 
@@ -21,9 +21,9 @@
 
 ## การขุด 0–100%
 
-เลือกเหมือง แล้วกด Space หรือปุ่มขุด ใช้คีย์บอร์ดภาษาอังกฤษ กด A–Z ตามปุ่มสุ่ม ยกเว้น M, C, R, U, B ที่สงวนไว้สำหรับเมนู
+เลือกเหมือง แล้วกด W/A/S/D หรือปุ่มขุด จากนั้นกดปุ่ม W/A/S/D ตามที่แสดง รองรับตำแหน่งปุ่มเดิมแม้ใช้คีย์บอร์ดภาษาไทย หรือเปิดปุ่มขุด Auto เพื่อจับจังหวะให้อัตโนมัติ
 
-- วงบีบสุ่ม 0.15–1.45 วินาที ดีบัฟแรงสั่นสะเทือนเร่งวง โดยยังไม่ต่ำกว่า 0.15 วินาที
+- วงบีบสุ่ม 2.2–3 วินาทีก่อนดีบัฟแรงสั่นสะเทือน โดยยังไม่ต่ำกว่า 1.2 วินาที
 - กดถูกปุ่มตอนวงสีขาวทับเส้นเขียวได้ 100% (Perfect) กดก่อนหรือหลังคิดเปอร์เซ็นต์จากระยะห่างของเส้นวง
 - กดผิดปุ่ม ไม่กด หมดเวลา ยกเลิก หรือคุณภาพ 0% ไม่ได้แร่ ยังคงเสียกำลังและความทนทาน
 - คุณภาพลดจำนวนแร่และโอกาสเพชร พื้นฐานเพชรเท่ากับ `2% + 23% × (คุณภาพ/100)²` ก่อนเอฟเฟกต์อีเตอร์ อาหาร และดีบัฟ
@@ -69,3 +69,5 @@ Game icons and the 1200×630 social cover are stored in `assets/marketing/`. The
 ## Protected production build
 
 Run `npm ci`, `npm test`, `npm run build`, then `npm run test:build`. Builds regenerate `dist/` and replace runtime sources with a minified, obfuscated `game.bundle.js`, without source maps. Original source files stay readable in the checkout. GitHub Pages installs locked dev dependencies before building and verifies the generated bundle. Obfuscation raises the effort of reading code; it cannot prevent browser downloads, copying images, reverse engineering, or client-side save manipulation. A public source repository still exposes the original code.
+
+Mining controls: W/A/S/D starts a manual attempt and the displayed W/A/S/D key resolves it. The ring lasts 1.2–3 seconds depending on mine timing effects. Auto repeatedly resolves attempts at the perfect ring position using normal energy and durability costs. It stops on insufficient energy, broken tools, Escape, opening a menu or hiding the page. Auto is session-only and does not resume from saves.

@@ -29,7 +29,7 @@ let energy=run('state.player.energy');run('begin()');assert(run('!!qte'));assert
 const key=run('qte.key');now=run('qte.start+qte.duration*(85/110)');for(const h of events.keydown)h({key,code:'Key'+key,target:{tagName:'BODY'},preventDefault(){}});
 assert.equal(run('qte'),null);assert.equal(run('state.pending'),null);assert(node('#toast').textContent.includes('100%'));assert(run('state.player.xp')>0);
 assert.equal(run('lootDrops.length'),0); // Actual ore sprites wait for pickaxe impact.
-now+=900;run(`frame(${now})`);run('begin()');const wrongKey=run("qte.key==='Z'?'x':'z'");for(const h of events.keydown)h({key:wrongKey,code:'Key'+wrongKey.toUpperCase(),target:{tagName:'BODY'},preventDefault(){}});assert(node('#toast').textContent.includes('0%'));assert(node('#toast').textContent.includes('ไม่ได้รับแร่'));
+now+=900;run(`frame(${now})`);run('begin()');const wrongKey=run("qte.key==='W'?'a':'w'");for(const h of events.keydown)h({key:wrongKey,code:'Key'+wrongKey.toUpperCase(),target:{tagName:'BODY'},preventDefault(){}});assert(node('#toast').textContent.includes('0%'));assert(node('#toast').textContent.includes('ไม่ได้รับแร่'));
 await run('SaveStorage.flush()');assert.equal(saved.format,'deepfield-local-chain');assert(run('M.valid(state)'));assert(!node('#storeview').innerHTML.includes('NaN'));
 // All 100 models and all 50 mine scenes can render with progression metadata.
 run('state.pending=null;qte=null;swing=null;state.unlocked=M.mines.map((m,i)=>i);state.player.level=100;state.player.energy=M.maxEnergy(state)');
@@ -43,6 +43,23 @@ run("lootDrops=[];lootBursts=[];spawnLootEffects({ore:M.ores[1],amount:7,bonus:M
 assert(node('#loot-banner').innerHTML.includes('ทองแดง'));assert(node('#loot-banner').innerHTML.includes('เพชร'));assert(node('#loot-banner').innerHTML.includes('PERFECT DROP'));assert(run('lootDrops.length')>0);
 run('drawLootEffects(5200)');assert(drawn>0);run('drawLootEffects(9000)');assert.equal(run('lootDrops.length'),0);assert.equal(run('lootBursts.length'),0);assert.equal(node('#loot-banner').hidden,true);assert.equal(run('JSON.stringify(state.ores)'),inventoryBefore);
 run("tab='mine';qte=null;swing=null;state.tools[0].type=0;state.tools[0].dur=40;state.sector=sector=0;state.player.energy=M.maxEnergy(state);begin();finish(0)");now+=400;run(`frame(${now})`);assert.equal(run('lootDrops.length'),0);
+// Slower WASD-only manual controls, physical key codes and auto lifecycle.
+run("tab='mine';qte=null;swing=null;state.pending=null;state.tools[0].dur=40;state.player.energy=M.maxEnergy(state)");
+const keydown=(key,code)=>{for(const h of events.keydown)h({key,code,target:{tagName:'BODY'},preventDefault(){}});};
+keydown(' ','Space');assert.equal(run('qte'),null);
+keydown('w','KeyW');assert(run('!!qte'));assert(run('qte.duration>=1200&&qte.duration<=3000'));assert('WASD'.includes(run('qte.key')));
+keydown('x','KeyX');assert(run('!!qte'));
+const physical=run('qte.key');now=run('qte.start+qte.duration*(85/110)');keydown('ไ','Key'+physical);assert.equal(run('qte'),null);assert(node('#toast').textContent.includes('100%'));
+run('swing=null');node('#auto-mine').onclick();assert(run('autoMining'));assert(run('!!qte'));
+const hitsBefore=run('state.hits');now=run('qte.start+qte.duration*(85/110)+1');run(`frame(${now})`);assert.equal(run('qte'),null);assert.equal(run('state.hits'),hitsBefore+1);
+now+=900;run(`frame(${now})`);assert(run('!!qte'));assert(run('autoMining'));
+node('#auto-mine').onclick();assert.equal(run('autoMining'),false);assert(run('!!qte'));
+keydown('Escape','Escape');assert.equal(run('qte'),null);
+run('swing=null;state.player.energy=M.maxEnergy(state)');node('#auto-mine').onclick();click({tab:'bag'});assert.equal(run('autoMining'),false);assert.equal(run('qte'),null);
+click({tab:'mine'});run('swing=null;state.player.energy=M.maxEnergy(state)');node('#auto-mine').onclick();box.document.hidden=true;for(const h of events.visibilitychange)h();assert.equal(run('autoMining'),false);assert.equal(run('qte'),null);box.document.hidden=false;
+run('swing=null;state.player.energy=0');node('#auto-mine').onclick();assert.equal(run('autoMining'),false);assert.equal(run('qte'),null);
+run('swing=null;state.player.energy=M.maxEnergy(state);state.tools[0].dur=0');node('#auto-mine').onclick();assert.equal(run('autoMining'),false);assert.equal(run('qte'),null);
+await run('SaveStorage.flush()');
 console.log('PASS: game HUD, menus, QTE, 50 scenes/100 tools, impact-timed ore sprites, bonus/Perfect drops, cleanup and no duplicate rewards');
 
 })().catch(error=>{console.error(error);process.exitCode=1;});
