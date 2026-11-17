@@ -11,7 +11,7 @@ if(path.dirname(output)!==root||path.basename(output)!=='dist')throw Error('Unsa
 // Always regenerate the publish directory so old readable scripts/ZIPs cannot leak.
 await rm(output,{recursive:true,force:true});
 await mkdir(output, {recursive:true});
-for(const name of ['style.css','game-ui.css','manifest.webmanifest','LICENSE']){
+for(const name of ['style.css','game-ui.css','manifest.webmanifest','LICENSE','googleb820e1884218aee0.html']){
   await copyFile(path.join(root,name),path.join(output,name));
 }
 const runtime=['engine.js','progression.js','assets/kenney/rocks.js','storage.js','audio.js'];
