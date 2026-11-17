@@ -59,3 +59,9 @@
 ## GitHub Pages
 
 `npm run build` เตรียมไฟล์เล่นเกมและใบอนุญาตแอสเซ็ตใน `dist/` โดยไม่รวมการทดสอบและ Git metadata Workflow `.github/workflows/pages.yml` ทดสอบและ deploy เมื่อ push ไป `main` หรือสั่งด้วย workflow_dispatch ต้องเปิด Pages โดยเลือก Source เป็น GitHub Actions ใน repository settings
+
+Local saves use a local blockchain-style hash chain in localStorage, without encryption, wallets, consensus, or network transactions. Each block stores a full save snapshot, timestamp, sequential index, previous hash and SHA-256 hash. The latest 100 blocks are retained with an anchor to the discarded prefix; older history cannot be verified after pruning. Loading verifies every retained block before restoring the latest snapshot. This detects corruption, but anyone controlling localStorage can rewrite the chain and recompute its hashes. Legacy JSON and previous encrypted saves migrate automatically (encrypted saves still require their original browser key). Unreadable saves are preserved without overwriting. Export/import remains portable JSON. SHA-256 uses Web Crypto and requires HTTPS, localhost, or a browser supporting it for local files.
+
+## SEO and branding
+
+Game icons and the 1200×630 social cover are stored in `assets/marketing/`. The page includes favicon, Apple touch icon, web manifest, Thai description, Open Graph and Twitter Card metadata. Canonical and social image URLs assume the GitHub Pages address `https://d-osc.github.io/deepfield-games/` based on the repository remote; update these in `index.html` if deploying to another domain.

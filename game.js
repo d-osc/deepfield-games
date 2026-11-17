@@ -1,7 +1,8 @@
 const M=Mining,$=s=>document.querySelector(s);let state=M.fresh(),tab='mine',bagTab='ores',sector=0,qte=null,logs=[],particles=[],flash=0,swing=null,lastFrame=0,frameStep=1,lootDrops=[],lootBursts=[],lootBannerUntil=0,lootArrivalUntil=0;
-try{let saved=M.migrate(JSON.parse(localStorage.getItem('deepfield-v1')));if(M.valid(saved))state=saved;}catch{}
+let loadFailed=false;
+try{let saved=M.migrate(await SaveStorage.load());if(M.valid(saved))state=saved;}catch{loadFailed=true;}
 sector=state.sector;
-function save(){try{localStorage.setItem('deepfield-v1',JSON.stringify(state));$('#savehint').textContent='✓ บันทึกในเครื่องแล้ว';}catch{$('#savehint').textContent='บันทึกอัตโนมัติไม่ได้ • กรุณาส่งออกเซฟ';}}
+async function save(){try{await SaveStorage.save(state);$('#savehint').textContent='✓ บันทึกใน blockchain ภายในเครื่องแล้ว';}catch{$('#savehint').textContent='บันทึกอัตโนมัติไม่ได้ • กรุณาส่งออกเซฟ';}}
 function toast(t){$('#toast').textContent=t;$('#window-notice').textContent=t;}
 function cost(c){return Object.entries(c).filter(([,v])=>v).map(([k,v])=>k==='money'?`${v} G`:`${M.ores.find(o=>o.id===k).name} ${v}`).join(' + ');}
 function btn(label,action,id,disabled=false){return `<button data-action="${action}" data-id="${id}" ${disabled?'disabled':''}>${label}</button>`;}
@@ -259,3 +260,5 @@ function updateSwing(now){if(!swing)return;let elapsed=now-swing.start;
 }
 dropSector=sector;render();resize();requestAnimationFrame(frame);
 setInterval(()=>{if(M.recover(state)){renderPlayer();save();}},1000);
+
+if(loadFailed)$('#savehint').textContent='อ่านเซฟไม่ได้ • เก็บเซฟเดิมไว้แล้ว กรุณานำเข้าเซฟสำรอง';else save();

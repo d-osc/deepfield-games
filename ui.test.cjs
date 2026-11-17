@@ -1,13 +1,16 @@
+(async()=>{
 // Integration smoke test for UI event wiring, without a browser dependency.
 const vm=require('node:vm'),fs=require('node:fs'),assert=require('node:assert/strict');
 let now=0;const events={},nodes=new Map(),gradient={addColorStop(){}};
 const context=new Proxy({createLinearGradient:()=>gradient,createRadialGradient:()=>gradient},{get:(o,k)=>k in o?o[k]:()=>{},set:(o,k,v)=>(o[k]=v,true)});
 function node(k){if(!nodes.has(k))nodes.set(k,{style:{},textContent:'',innerHTML:'',clientWidth:900,clientHeight:430,getContext:()=>context,classList:{toggle(){}},scrollIntoView(){},focus(){}});return nodes.get(k);}
 const legacy=require('./engine.js').fresh();legacy.sector=19;legacy.money=10000;
-let saved;
-const box={document:{querySelector:node,querySelectorAll:()=>[],addEventListener:(k,f)=>(events[k]??=[]).push(f)},localStorage:{getItem:()=>JSON.stringify(legacy),setItem:(k,v)=>saved=JSON.parse(v)},ResizeObserver:class{observe(){}},requestAnimationFrame(){},setInterval(){},performance:{now:()=>now},devicePixelRatio:1,console};
+let saved;const values=new Map([['deepfield-v1',JSON.stringify(legacy)]]);
+const box={crypto:require('node:crypto').webcrypto,TextEncoder,TextDecoder,btoa,atob,document:{querySelector:node,querySelectorAll:()=>[],addEventListener:(k,f)=>(events[k]??=[]).push(f)},localStorage:{getItem:k=>values.get(k)??null,setItem:(k,v)=>{values.set(k,v);if(k==='deepfield-v1')saved=JSON.parse(v);}},ResizeObserver:class{observe(){}},requestAnimationFrame(){},setInterval(){},performance:{now:()=>now},devicePixelRatio:1,console};
 vm.createContext(box);
-for(const f of ['engine.js','progression.js','assets/kenney/rocks.js','game.js'])vm.runInContext(fs.readFileSync(f,'utf8'),box);
+vm.runInContext(fs.readFileSync('storage.js','utf8'),box);
+box.__loaded=await vm.runInContext('SaveStorage.load()',box);
+for(const f of ['engine.js','progression.js','assets/kenney/rocks.js','game.js'])vm.runInContext(fs.readFileSync(f,'utf8').replace('await SaveStorage.load()','__loaded'),box);
 const run=code=>vm.runInContext(code,box),click=dataset=>{for(const handler of events.click)handler({target:{closest:()=>({dataset})}});};
 assert(node('#playercard').innerHTML.includes('Lv.1'));assert.equal(run('state.sector'),19);assert.equal(run('state.version'),2);
 assert.equal((node('#deposits').innerHTML.match(/data-rate=/g)||[]).length,50);
@@ -27,7 +30,7 @@ const key=run('qte.key');now=run('qte.start+qte.duration*(85/110)');for(const h 
 assert.equal(run('qte'),null);assert.equal(run('state.pending'),null);assert(node('#toast').textContent.includes('100%'));assert(run('state.player.xp')>0);
 assert.equal(run('lootDrops.length'),0); // Actual ore sprites wait for pickaxe impact.
 now+=900;run(`frame(${now})`);run('begin()');const wrongKey=run("qte.key==='Z'?'x':'z'");for(const h of events.keydown)h({key:wrongKey,code:'Key'+wrongKey.toUpperCase(),target:{tagName:'BODY'},preventDefault(){}});assert(node('#toast').textContent.includes('0%'));assert(node('#toast').textContent.includes('ไม่ได้รับแร่'));
-assert(saved);assert(run('M.valid(state)'));assert(!node('#storeview').innerHTML.includes('NaN'));
+await run('SaveStorage.flush()');assert.equal(saved.format,'deepfield-local-chain');assert(run('M.valid(state)'));assert(!node('#storeview').innerHTML.includes('NaN'));
 // All 100 models and all 50 mine scenes can render with progression metadata.
 run('state.pending=null;qte=null;swing=null;state.unlocked=M.mines.map((m,i)=>i);state.player.level=100;state.player.energy=M.maxEnergy(state)');
 for(let i=0;i<50;i++){click({sector:String(i)});run(`frame(${now})`);assert.equal(node('#rockname').textContent,run(`M.mines[${i}].name`));}
@@ -41,3 +44,5 @@ assert(node('#loot-banner').innerHTML.includes('ทองแดง'));assert(nod
 run('drawLootEffects(5200)');assert(drawn>0);run('drawLootEffects(9000)');assert.equal(run('lootDrops.length'),0);assert.equal(run('lootBursts.length'),0);assert.equal(node('#loot-banner').hidden,true);assert.equal(run('JSON.stringify(state.ores)'),inventoryBefore);
 run("tab='mine';qte=null;swing=null;state.tools[0].type=0;state.tools[0].dur=40;state.sector=sector=0;state.player.energy=M.maxEnergy(state);begin();finish(0)");now+=400;run(`frame(${now})`);assert.equal(run('lootDrops.length'),0);
 console.log('PASS: game HUD, menus, QTE, 50 scenes/100 tools, impact-timed ore sprites, bonus/Perfect drops, cleanup and no duplicate rewards');
+
+})().catch(error=>{console.error(error);process.exitCode=1;});

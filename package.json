@@ -5,6 +5,6 @@
   "description": "Offline mining game with player progression, timed mining and a local save",
   "scripts": {
     "build": "node scripts/build-pages.mjs",
-    "test": "node test.cjs && node progression.test.cjs && node ui.test.cjs"
+    "test": "node test.cjs && node progression.test.cjs && node ui.test.cjs && node --test storage.test.cjs"
   }
 }

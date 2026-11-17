@@ -1,5 +1,35 @@
 <!doctype html>
-<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DEEPFIELD — Offline Mining</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="game-ui.css"></head>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DEEPFIELD — ขุดลึก ล่าสมบัติ | เกมขุดแร่ออฟไลน์</title>
+<meta name="description" content="เล่น DEEPFIELD เกมขุดแร่ออฟไลน์ จับจังหวะขุด สะสมแร่และอัญมณี 80 ชนิด อัปเกรดอีเตอร์ 100 แบบ และสำรวจเหมือง 50 แห่ง">
+<meta name="theme-color" content="#103c29">
+<link rel="canonical" href="https://d-osc.github.io/deepfield-games/">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/marketing/deepfield-icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/marketing/deepfield-icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/marketing/deepfield-icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="th_TH">
+<meta property="og:site_name" content="DEEPFIELD">
+<meta property="og:title" content="DEEPFIELD — ขุดลึก ล่าสมบัติ">
+<meta property="og:description" content="จับจังหวะขุดแร่ ล่าอัญมณี อัปเกรดอีเตอร์ และสำรวจเหมือง 50 แห่งในเกมขุดแร่ออฟไลน์">
+<meta property="og:url" content="https://d-osc.github.io/deepfield-games/">
+<meta property="og:image" content="https://d-osc.github.io/deepfield-games/assets/marketing/deepfield-cover-1200x630.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="DEEPFIELD ขุดลึก ล่าสมบัติ นักขุดกำลังขุดแร่และอัญมณีในเหมือง">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="DEEPFIELD — ขุดลึก ล่าสมบัติ">
+<meta name="twitter:description" content="ขุดแร่ สะสมอัญมณี อัปเกรดอีเตอร์ และสำรวจเหมือง 50 แห่ง เล่นออฟไลน์ได้">
+<meta name="twitter:image" content="https://d-osc.github.io/deepfield-games/assets/marketing/deepfield-cover-1200x630.png">
+<meta name="twitter:image:alt" content="ปกเกม DEEPFIELD นักขุดกับแร่และอัญมณีในเหมือง">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="game-ui.css">
+</head>
 <body class="game-mode">
 <header class="game-topbar"><div class="brand">◈ DEEPFIELD <small>นักขุดแห่งใต้พิภพ</small></div><div class="location-badge"><span class="location-dot"></span><span id="sectorlabel">COPPER RIDGE</span><span id="depth">40 m</span></div><div class="top-actions"><div id="wallet"></div><button id="fullscreen" class="icon-button" aria-label="เต็มหน้าจอ" title="เต็มหน้าจอ">⛶</button><details class="game-settings"><summary aria-label="เมนูเซฟ" title="เมนูเซฟ">⚙</summary><div class="settings-popover"><strong>บันทึกการผจญภัย</strong><button id="export" class="quiet">↓ ส่งออกเซฟ</button><label class="quiet import">↑ นำเข้าเซฟ<input id="import" type="file" accept="application/json" hidden></label><span id="savehint">บันทึกอัตโนมัติในเครื่อง</span></div></details></div></header>
 <main class="game-shell">
@@ -11,4 +41,4 @@
 <nav class="game-hotbar" aria-label="เมนูเกม"><button data-tab="map" title="แผนที่เหมือง (M)"><kbd>M</kbd><b>♧</b><span>แผนที่เหมือง</span></button><button data-tab="shop" title="ร้านค้า (C)"><kbd>C</kbd><b>⚖</b><span>ร้านค้า</span></button><button data-tab="repair" title="ซ่อมอีเตอร์ (R)"><kbd>R</kbd><b>⚒</b><span>ซ่อม</span></button><button data-tab="upgrade" title="อัปเกรด (U)"><kbd>U</kbd><b>⇈</b><span>อัปเกรด</span></button><button data-tab="bag" title="กระเป๋า (B)"><kbd>B</kbd><b>▣</b><span>กระเป๋า</span></button></nav>
 <div id="game-window" class="game-window" role="dialog" aria-modal="true" aria-labelledby="viewtitle" hidden><button class="window-backdrop" data-tab="mine" aria-label="กลับไปขุดแร่"></button><section class="window-frame"><div class="window-titlebar"><div><span class="eyebrow">DEEPFIELD / BASE CAMP</span><h2 id="viewtitle">กระเป๋านักขุด</h2></div><button data-tab="mine" class="window-close" aria-label="ปิดหน้าต่าง">✕ <kbd>ESC</kbd></button></div><div id="window-notice" class="window-notice" role="status"></div><div class="window-body"><div id="mine-atlas" hidden><div class="atlas-heading"><h3>แผนที่เหมือง</h3><span id="minecount" class="tiny"></span></div><div class="atlas-layout"><div id="deposits" class="deposits"></div><div id="droprates"></div></div></div><div id="storeview" hidden></div></div></section></div>
 </main><footer class="game-status"><span>● OFFLINE</span><span id="stats"></span><span>SPACE ขุด · B กระเป๋า · M เหมือง · ESC ปิด</span></footer>
-<script src="engine.js"></script><script src="progression.js"></script><script src="assets/kenney/rocks.js"></script><script src="game.js"></script></body></html>
+<script src="engine.js"></script><script src="progression.js"></script><script src="assets/kenney/rocks.js"></script><script src="storage.js"></script><script type="module" src="game.js"></script></body></html>
