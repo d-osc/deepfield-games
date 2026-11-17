@@ -21,11 +21,11 @@
 
 ## การขุด 0–100%
 
-เลือกเหมือง คลิกหรือแตะฉาก/ปุ่มขุดเพื่อเริ่มวง แล้วคลิกหรือแตะอีกครั้งเมื่อวงทับเส้นเป้าหมาย อีเตอร์ขยับตามเมาส์หรือตำแหน่งสัมผัส ปุ่มเริ่มรอบต่อเนื่องเริ่มวงถัดไปให้ แต่ผู้เล่นต้องคลิก/แตะจับจังหวะเองทุกครั้ง
+วงเกิดสุ่มบนหินเองทุก 0.35–0.75 วินาที พร้อมกันได้สูงสุด 6 วง คลิกหรือแตะวงที่ต้องการเมื่อหดทับเส้นเป้าหมาย วงซ้อนกันรับวงบนสุดก่อน อีเตอร์ขยับตามเมาส์หรือตำแหน่งสัมผัส ไม่ต้องกดปุ่มเริ่มขุด
 
 - วงบีบสุ่ม 0.3–3 วินาทีก่อนดีบัฟแรงสั่นสะเทือน โดยยังไม่ต่ำกว่า 0.3 วินาที
 - กดถูกปุ่มตอนวงสีขาวทับเส้นเขียวได้ 100% (Perfect) กดก่อนหรือหลังคิดเปอร์เซ็นต์จากระยะห่างของเส้นวง
-- กดผิดปุ่ม ไม่กด หมดเวลา ยกเลิก หรือคุณภาพ 0% ไม่ได้แร่ ยังคงเสียกำลังและความทนทาน
+- ปล่อยวงหมดเวลาหรือออกจากหน้าเหมืองไม่เสียอะไร ส่วนคลิกวงที่คุณภาพ 0% ไม่ได้แร่ แต่เสียกำลังและความทนทานตามการขุดหนึ่งครั้ง
 - คุณภาพลดจำนวนแร่และโอกาสเพชร พื้นฐานเพชรเท่ากับ `2% + 23% × (คุณภาพ/100)²` ก่อนเอฟเฟกต์อีเตอร์ อาหาร และดีบัฟ
 - ขุดสำเร็จได้แร่หลักอย่างน้อย 1 ชิ้น อีเตอร์เสียงสะท้อนอาจสุ่มเพิ่มอีก 1 ชิ้น
 - ช่วงเปลี่ยนเมนูระหว่างขุดจะนับเป็นการยกเลิกหนึ่งครั้งและใช้ระยะบัฟ
@@ -70,11 +70,11 @@ Game icons and the 1200×630 social cover are stored in `assets/marketing/`. The
 
 Run `npm ci`, `npm test`, `npm run build`, then `npm run test:build`. Builds regenerate `dist/` and replace runtime sources with a minified, obfuscated `game.bundle.js`, without source maps. Original source files stay readable in the checkout. GitHub Pages installs locked dev dependencies before building and verifies the generated bundle. Obfuscation raises the effort of reading code; it cannot prevent browser downloads, copying images, reverse engineering, or client-side save manipulation. A public source repository still exposes the original code.
 
-Mining controls: primary mouse clicks or touchscreen taps start and resolve attempts. WASD no longer controls mining. The ring lasts 0.3–3 seconds depending on mine timing effects. Auto starts subsequent attempts using normal energy and durability costs, but the player must click or tap at the correct time to resolve each attempt. No input or zero-quality timing yields no ore. It stops on insufficient energy, broken tools, Escape, opening a menu or hiding the page. Auto is session-only and does not resume from saves.
+Mining rings spawn automatically every 350–750 ms, up to six simultaneous overlapping rings. A trusted primary click or touch inside a live ring resolves the newest overlapping ring at that position. Resource costs begin only on an accepted click; untouched expiration, hiding the page and opening panels change no game state. Rings are transient and are not saved. The 850 ms pickaxe swing remains a cooldown between accepted hits.
 
 Mining feedback includes expanding bursts at the timing ring, golden Perfect rays, and synthesized start/press/miss/rock-impact sounds via Web Audio. Sounds start after a player gesture; use the speaker button to mute for the session. Effects and audio work offline without downloaded sound files. Reduced-motion mode simplifies the new bursts.
 
-Continuous rounds only start the next ring. Rewards require a trusted primary pointer event or activation of the mining button from the player; timeouts and scripted DOM pointer events cannot award ore through this UI. Production HTML versions the bundle URL to refresh browser caches. This remains client-side behavior, not server anti-cheat.
+The manual mining and continuous-round buttons have been removed. Production HTML versions the bundle URL to refresh browser caches. This remains client-side behavior, not server anti-cheat.
 
 Rock durability is saved separately for all 50 mines (maximum 30 + mine index × 12). Successful player-timed hits deal damage from tool power, upgrades and timing quality; misses do not damage rock. Breaking a rock unlocks the next mine for free and resets the current mine to a fresh full-durability rock without changing location. The final mine respawns rocks without an out-of-range unlock. Each successful impact emits stone chips; a break produces a larger shatter and respawn animation. Timing and result percentages use larger text. Legacy saves receive full rock durability automatically.
 
