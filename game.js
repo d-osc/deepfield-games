@@ -1,5 +1,7 @@
 const M=Mining,$=s=>document.querySelector(s);let state=M.fresh(),tab='mine',bagTab='ores',sector=0,qte=null,logs=[],particles=[],flash=0,swing=null,lastFrame=0,frameStep=1,lootDrops=[],lootBursts=[],lootBannerUntil=0,lootArrivalUntil=0;
-let autoMining=false;
+let autoMining=false,pressBlasts=[];
+const reducedEffects=globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches??false;
+$('#sound-toggle').onclick=()=>{const enabled=SoundFX.toggle();$('#sound-toggle').textContent=enabled?'🔊':'🔇';$('#sound-toggle').setAttribute?.('aria-pressed',String(enabled));$('#sound-toggle').setAttribute?.('aria-label',enabled?'ปิดเสียง':'เปิดเสียง');};
 let loadFailed=false;
 try{let saved=M.migrate(await SaveStorage.load());if(M.valid(saved))state=saved;}catch{loadFailed=true;}
 sector=state.sector;
@@ -98,18 +100,20 @@ document.addEventListener('click',e=>{
 });
 $('#fullscreen').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen?.();else document.documentElement?.requestFullscreen?.().catch(()=>toast('เบราว์เซอร์นี้ไม่รองรับเต็มหน้าจอ'));};
 function begin(){
- if(qte||swing||tab!=='mine')return;const started=M.startMining(state,sector);if(!started.ok){stopAuto();toast(started.message);renderPlayer();return;}
+ if(qte||swing||tab!=='mine')return;SoundFX.unlock();const started=M.startMining(state,sector);if(!started.ok){stopAuto();toast(started.message);renderPlayer();return;}
+ SoundFX.play('start');
  let key='WASD'[Math.floor(Math.random()*4)];qte={key,start:performance.now(),duration:Math.max(300,Math.min(3000,(300+Math.random()*2700)*M.timingFactor(state,sector))),x:30+Math.random()*40,y:28+Math.random()*25};
  $('#prompt').innerHTML=`<div class="qte" style="left:${qte.x}%;top:${qte.y}%"><i class="target"></i><i class="ring"></i><b>${key}</b><small class="qte-score">0%</small></div>`;toast('กด '+key+' เมื่อวงสีขาวทับเส้นเขียว • ตรงเส้น 100%');save();render();
 }
 function finish(quality,reason){
- if(!qte)return;const percent=typeof quality==='boolean'?(quality?100:0):quality;qte=null;$('#prompt').innerHTML='';let result=M.mine(state,percent,sector);if(!result)return;
+ if(!qte)return;const percent=typeof quality==='boolean'?(quality?100:0):quality;const target=qte;qte=null;$('#prompt').innerHTML='';let result=M.mine(state,percent,sector);if(!result)return;
+ if(!document.hidden){spawnPressBlast(target,result.quality,performance.now());SoundFX.play(result.ore?'press':'miss',result.critical);}
  let msg=result.ore?`${result.critical?'✦ PERFECT! ':''}${result.quality}% • ${result.ore.name} +${result.amount}`:'0% • ขุดพลาด ไม่ได้รับแร่';
  if(result.bonus)msg+=` • โบนัส ${result.bonus.name} +1`;if(result.triggered)msg+=` • ✦ ${result.effect.name}`;if(reason)msg+=' • '+reason;msg+=` • EXP +${result.xp}`;if(result.levels)msg+=` • LEVEL UP! Lv.${state.player.level}`;
  toast(msg);logs.unshift(msg);swing={start:performance.now(),critical:result.critical,color:result.ore?.color||'#889b90',impacted:false,loot:result};if(autoMining&&(M.tool(state).dur===0||state.player.energy<M.energyCost(state)))stopAuto();if(M.tool(state).dur===0)toast(msg+' • อีเตอร์พังแล้ว ไปซ่อมได้ที่ร้านซ่อม');save();render();
 }
 $('#mine').onclick=begin;
-$('#auto-mine').onclick=()=>{if(autoMining){stopAuto();toast('หยุด Auto • รอบปัจจุบันใช้ W A S D จับจังหวะต่อ');return;}if(tab!=='mine'||document.hidden)return;autoMining=true;renderAuto();if(!qte&&!swing)begin();};
+$('#auto-mine').onclick=()=>{SoundFX.unlock();if(autoMining){stopAuto();toast('หยุด Auto • รอบปัจจุบันใช้ W A S D จับจังหวะต่อ');return;}if(tab!=='mine'||document.hidden)return;autoMining=true;renderAuto();if(!qte&&!swing)begin();};
 document.addEventListener('keydown',e=>{
  if(e.key==='Escape'){e.preventDefault();stopAuto();if(qte)finish(0,'ยกเลิกการขุด');if(tab!=='mine')openPanel('mine');return;}
  if(e.key==='Tab'&&tab!=='mine'){
@@ -118,20 +122,20 @@ document.addEventListener('keydown',e=>{
  }
  if(e.repeat||e.ctrlKey||e.metaKey||e.altKey||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;
  const miningKey=/^Key[WASD]$/.test(e.code||'')?e.code.slice(3):(/^[wasd]$/i.test(e.key)?e.key.toUpperCase():null);
- if(miningKey){e.preventDefault();if(autoMining)return;if(qte){let p=(performance.now()-qte.start)/qte.duration,correct=miningKey===qte.key;finish(correct?M.score(p):0,correct?'':'ผิดปุ่ม');}else begin();return;}
+ if(miningKey){e.preventDefault();SoundFX.unlock();if(autoMining)return;if(qte){let p=(performance.now()-qte.start)/qte.duration,correct=miningKey===qte.key;finish(correct?M.score(p):0,correct?'':'ผิดปุ่ม');}else begin();return;}
  if(qte)return;
  const shortcut={b:'bag',m:'map',c:'shop',r:'repair',u:'upgrade'}[e.key.toLowerCase()];if(shortcut){e.preventDefault();openPanel(tab===shortcut?'mine':shortcut);}
 });
-document.addEventListener('visibilitychange',()=>{if(document.hidden){stopAuto();if(qte)finish(false,'หยุดการขุดเมื่อสลับหน้าต่าง');}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){pressBlasts=[];stopAuto();if(qte)finish(false,'หยุดการขุดเมื่อสลับหน้าต่าง');}});
 $('#export').onclick=()=>{let u=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=u;a.download='deepfield-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};
-$('#import').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{if(f.size>100000)throw Error();let s=M.migrate(JSON.parse(await f.text()));if(!M.valid(s))throw Error();if(!confirm('นำเข้าเซฟนี้แทนความคืบหน้าปัจจุบัน?'))return;if(qte){qte=null;$('#prompt').innerHTML='';}stopAuto();state=s;sector=state.sector;dropSector=sector;logs=[];lootDrops=[];lootBursts=[];lootBannerUntil=0;$('#loot-banner').hidden=true;save();render();toast('นำเข้าเซฟเรียบร้อย');}catch{alert('ไฟล์เซฟไม่ถูกต้อง');}finally{e.target.value='';}};
+$('#import').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{if(f.size>100000)throw Error();let s=M.migrate(JSON.parse(await f.text()));if(!M.valid(s))throw Error();if(!confirm('นำเข้าเซฟนี้แทนความคืบหน้าปัจจุบัน?'))return;if(qte){qte=null;$('#prompt').innerHTML='';}stopAuto();pressBlasts=[];state=s;sector=state.sector;dropSector=sector;logs=[];lootDrops=[];lootBursts=[];lootBannerUntil=0;$('#loot-banner').hidden=true;save();render();toast('นำเข้าเซฟเรียบร้อย');}catch{alert('ไฟล์เซฟไม่ถูกต้อง');}finally{e.target.value='';}};
 // Perspective-projected low-poly cave, rendered locally with no network assets.
 const canvas=$('#world'),ctx=canvas.getContext('2d');let W=800,H=430,dpr=1;function resize(){dpr=Math.min(devicePixelRatio||1,2);W=canvas.clientWidth;H=canvas.clientHeight;canvas.width=W*dpr;canvas.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);}new ResizeObserver(resize).observe(canvas);
 let seed=42;function rand(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;}const stones=Array.from({length:42},()=>({x:(rand()-.5)*26,y:rand()*1.2-2.5,z:rand()*22+4,s:.4+rand()*2}));
 function project(p){let z=p[2]+13;return[W/2+p[0]*W*.8/z,H*.38-p[1]*W*.8/z];}
 function poly(points,color){ctx.beginPath();points.map(project).forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fillStyle=color;ctx.fill();}
 function rock(x,y,z,s,color){let a=[x-s,y,z-s],b=[x+s,y,z-s],c=[x+s*.9,y,z+s],d=[x-s,y,z+s],top=[x-s*.2,y+s*1.6,z],l=[x-s*.7,y+s*.7,z-s*.7],r=[x+s*.7,y+s*.8,z-s*.4];poly([d,c,top],color[0]);poly([a,d,top,l],color[1]);poly([b,a,l,r],color[2]);poly([c,b,r,top],color[3]);poly([l,top,r],color[4]);}
-function frame(now){frameStep=Math.min(2.5,(now-(lastFrame||now-16.67))/16.67);lastFrame=now;updateSwing(now);ctx.clearRect(0,0,W,H);let bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,M.mines[sector].bg);bg.addColorStop(1,M.mines[sector].floor);ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);poly([[-30,-3,0],[30,-3,0],[30,-3,50],[-30,-3,50]],M.mines[sector].floor);for(let i=0;i<8;i++){let x=(i-3.5)*6;rock(x,-3,27,4,['#152724','#1a2c27','#22362c','#112420','#304235']);}for(const r of [...stones].sort((a,b)=>b.z-a.z))rock(r.x,r.y,r.z,r.s,['#34493b','#2b3b32','#405442','#253b32','#4a5d46']);let shake=impactShake(now);ctx.save();ctx.translate(shake,shake*.4);drawMiningBoulder();ctx.restore();drawPickaxe(now);let glow=ctx.createRadialGradient(W*.5,H*.45,0,W*.5,H*.45,W*.45);glow.addColorStop(0,'#c9e88b0c');glow.addColorStop(1,'#00000080');ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);for(let i=0;i<22;i++){let x=(i*137.5+Math.sin(now*.0002+i)*20)%W,y=(i*51-now*.012)%H;if(y<0)y+=H;ctx.fillStyle='#e2efbc33';ctx.fillRect(x,y,2,2);}for(let p of particles){p.x+=p.vx*frameStep;p.y+=p.vy*frameStep;p.vy+=.12*frameStep;p.life-=.025*frameStep;ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,4,4);}particles=particles.filter(p=>p.life>0);ctx.globalAlpha=1;if(flash>0){ctx.fillStyle=`rgba(211,255,163,${flash*.15})`;ctx.fillRect(0,0,W,H);flash=Math.max(0,flash-.025*frameStep);}drawLootEffects(now);if(qte){let p=(now-qte.start)/qte.duration;if(autoMining&&p>=85/110&&p<1)finish(M.score(85/110),'Auto');else if(p>=1){if(autoMining&&!document.hidden)finish(M.score(85/110),'Auto');else finish(false,'หมดเวลา');}else{let ring=$('.ring');if(ring){let size=150-110*p;ring.style.width=ring.style.height=size+'px';let quality=M.score(p);ring.style.borderColor=quality===100?'#c4f589':'#ffffff';const score=$('.qte-score');if(score)score.textContent=quality+'%';}}}if(autoMining&&!document.hidden&&tab==='mine'&&!qte&&!swing)begin();requestAnimationFrame(frame);}
+function frame(now){frameStep=Math.min(2.5,(now-(lastFrame||now-16.67))/16.67);lastFrame=now;updateSwing(now);ctx.clearRect(0,0,W,H);let bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,M.mines[sector].bg);bg.addColorStop(1,M.mines[sector].floor);ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);poly([[-30,-3,0],[30,-3,0],[30,-3,50],[-30,-3,50]],M.mines[sector].floor);for(let i=0;i<8;i++){let x=(i-3.5)*6;rock(x,-3,27,4,['#152724','#1a2c27','#22362c','#112420','#304235']);}for(const r of [...stones].sort((a,b)=>b.z-a.z))rock(r.x,r.y,r.z,r.s,['#34493b','#2b3b32','#405442','#253b32','#4a5d46']);let shake=impactShake(now);ctx.save();ctx.translate(shake,shake*.4);drawMiningBoulder();ctx.restore();drawPickaxe(now);let glow=ctx.createRadialGradient(W*.5,H*.45,0,W*.5,H*.45,W*.45);glow.addColorStop(0,'#c9e88b0c');glow.addColorStop(1,'#00000080');ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);for(let i=0;i<22;i++){let x=(i*137.5+Math.sin(now*.0002+i)*20)%W,y=(i*51-now*.012)%H;if(y<0)y+=H;ctx.fillStyle='#e2efbc33';ctx.fillRect(x,y,2,2);}for(let p of particles){p.x+=p.vx*frameStep;p.y+=p.vy*frameStep;p.vy+=.12*frameStep;p.life-=.025*frameStep;ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,4,4);}particles=particles.filter(p=>p.life>0);ctx.globalAlpha=1;if(flash>0){ctx.fillStyle=`rgba(211,255,163,${flash*.15})`;ctx.fillRect(0,0,W,H);flash=Math.max(0,flash-.025*frameStep);}drawLootEffects(now);drawPressBlasts(now);if(qte){let p=(now-qte.start)/qte.duration;if(autoMining&&p>=85/110&&p<1)finish(M.score(85/110),'Auto');else if(p>=1){if(autoMining&&!document.hidden)finish(M.score(85/110),'Auto');else finish(false,'หมดเวลา');}else{let ring=$('.ring');if(ring){let size=150-110*p;ring.style.width=ring.style.height=size+'px';let quality=M.score(p);ring.style.borderColor=quality===100?'#c4f589':'#ffffff';const score=$('.qte-score');if(score)score.textContent=quality+'%';}}}if(autoMining&&!document.hidden&&tab==='mine'&&!qte&&!swing)begin();requestAnimationFrame(frame);}
 // Imported Kenney Nature Kit OBJ meshes, bundled locally under CC0.
 function stoneNoise(n){let v=Math.sin(n*127.1+311.7)*43758.5453;return v-Math.floor(v);}
 const rockMeshes=M.mines.map((mine,index)=>{
@@ -257,9 +261,29 @@ function drawLootEffects(now){
  $('.hud-findings').classList.toggle('loot-arrival',now<lootArrivalUntil);
  if(lootBannerUntil&&now>=lootBannerUntil){$('#loot-banner').hidden=true;lootBannerUntil=0;}
 }
+function spawnPressBlast(target,quality,now){
+ const perfect=quality===100,color=perfect?'#ffe49a':quality>0?'#b9f58b':'#eaa486';
+ pressBlasts.push({x:target.x/100,y:target.y/100,start:now,color,perfect,quality});
+ if(pressBlasts.length>6)pressBlasts.shift();
+}
+function drawPressBlasts(now){
+ for(const blast of pressBlasts){
+  const t=(now-blast.start)/600;if(t<0||t>=1)continue;
+  const x=blast.x*W,y=blast.y*H,r=(reducedEffects?20:25+Math.sqrt(t)*(blast.perfect?115:75));
+  ctx.save();ctx.translate(x,y);ctx.globalAlpha=(1-t)*.85;ctx.strokeStyle=blast.color;ctx.fillStyle=blast.color;ctx.lineWidth=(blast.perfect?5:3)*(1-t)+1;
+  ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.stroke();
+  if(!reducedEffects){
+   ctx.globalAlpha=(1-t)*.14;ctx.beginPath();ctx.arc(0,0,r*.8,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1-t;
+   for(let i=0;i<(blast.perfect?16:10);i++){const angle=i*Math.PI*2/(blast.perfect?16:10),inner=r*(.65+.1*Math.sin(i*7)),outer=inner+14*(1-t);ctx.beginPath();ctx.moveTo(Math.cos(angle)*inner,Math.sin(angle)*inner);ctx.lineTo(Math.cos(angle)*outer,Math.sin(angle)*outer);ctx.stroke();}
+  }
+  ctx.font=blast.perfect?'bold 20px sans-serif':'bold 15px sans-serif';ctx.textAlign='center';ctx.fillText(blast.perfect?'PERFECT!':blast.quality+'%',0,-r-10);ctx.restore();
+ }
+ pressBlasts=pressBlasts.filter(blast=>now-blast.start<600);
+}
 function updateSwing(now){if(!swing)return;let elapsed=now-swing.start;
  if(elapsed>=320&&!swing.impacted){swing.impacted=true;flash=swing.critical?1:.4;
   let tip=project(pickaxePoint([-2,3.1,-.25],-.55,0));
+  if(swing.loot?.ore){SoundFX.play('impact',swing.critical);}
   if(swing.loot?.ore)spawnLootEffects(swing.loot,tip,now);
   for(let i=0;i<(swing.critical?48:22);i++)particles.push({x:tip[0],y:tip[1],vx:(Math.random()-.5)*(swing.critical?15:9),vy:-2-Math.random()*7,life:1,color:i%3?swing.color:'#f7f9d0'});
  }

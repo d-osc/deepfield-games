@@ -10,7 +10,7 @@ const box={crypto:require('node:crypto').webcrypto,TextEncoder,TextDecoder,btoa,
 vm.createContext(box);
 vm.runInContext(fs.readFileSync('storage.js','utf8'),box);
 box.__loaded=await vm.runInContext('SaveStorage.load()',box);
-for(const f of ['engine.js','progression.js','assets/kenney/rocks.js','game.js'])vm.runInContext(fs.readFileSync(f,'utf8').replace('await SaveStorage.load()','__loaded'),box);
+for(const f of ['engine.js','progression.js','assets/kenney/rocks.js','audio.js','game.js'])vm.runInContext(fs.readFileSync(f,'utf8').replace('await SaveStorage.load()','__loaded'),box);
 const run=code=>vm.runInContext(code,box),click=dataset=>{for(const handler of events.click)handler({target:{closest:()=>({dataset})}});};
 assert(node('#playercard').innerHTML.includes('Lv.1'));assert.equal(run('state.sector'),19);assert.equal(run('state.version'),2);
 assert.equal((node('#deposits').innerHTML.match(/data-rate=/g)||[]).length,50);
@@ -27,7 +27,7 @@ click({tab:'mine'});for(const h of events.keydown)h({key:'b',code:'KeyB',target:
 click({tab:'mine'});click({sector:'1'});assert.equal(run('sector'),19);const money=run('state.money');click({action:'unlock',id:'1'});assert.equal(run('state.money'),money-run('M.mines[1].unlockPrice'));click({sector:'1'});assert.equal(run('sector'),1);
 let energy=run('state.player.energy');run('begin()');assert(run('!!qte'));assert(run('!!state.pending'));assert(run('state.player.energy')<energy);
 const key=run('qte.key');now=run('qte.start+qte.duration*(85/110)');for(const h of events.keydown)h({key,code:'Key'+key,target:{tagName:'BODY'},preventDefault(){}});
-assert.equal(run('qte'),null);assert.equal(run('state.pending'),null);assert(node('#toast').textContent.includes('100%'));assert(run('state.player.xp')>0);
+assert.equal(run('qte'),null);assert.equal(run('pressBlasts.at(-1).perfect'),true);assert.equal(run('state.pending'),null);assert(node('#toast').textContent.includes('100%'));assert(run('state.player.xp')>0);
 assert.equal(run('lootDrops.length'),0); // Actual ore sprites wait for pickaxe impact.
 now+=900;run(`frame(${now})`);run('begin()');const wrongKey=run("qte.key==='W'?'a':'w'");for(const h of events.keydown)h({key:wrongKey,code:'Key'+wrongKey.toUpperCase(),target:{tagName:'BODY'},preventDefault(){}});assert(node('#toast').textContent.includes('0%'));assert(node('#toast').textContent.includes('ไม่ได้รับแร่'));
 await run('SaveStorage.flush()');assert.equal(saved.format,'deepfield-local-chain');assert(run('M.valid(state)'));assert(!node('#storeview').innerHTML.includes('NaN'));
@@ -43,6 +43,7 @@ run("lootDrops=[];lootBursts=[];spawnLootEffects({ore:M.ores[1],amount:7,bonus:M
 assert(node('#loot-banner').innerHTML.includes('ทองแดง'));assert(node('#loot-banner').innerHTML.includes('เพชร'));assert(node('#loot-banner').innerHTML.includes('PERFECT DROP'));assert(run('lootDrops.length')>0);
 run('drawLootEffects(5200)');assert(drawn>0);run('drawLootEffects(9000)');assert.equal(run('lootDrops.length'),0);assert.equal(run('lootBursts.length'),0);assert.equal(node('#loot-banner').hidden,true);assert.equal(run('JSON.stringify(state.ores)'),inventoryBefore);
 run("tab='mine';qte=null;swing=null;state.tools[0].type=0;state.tools[0].dur=40;state.sector=sector=0;state.player.energy=M.maxEnergy(state);begin();finish(0)");now+=400;run(`frame(${now})`);assert.equal(run('lootDrops.length'),0);
+run('drawPressBlasts(1e9)');assert.equal(run('pressBlasts.length'),0);node('#sound-toggle').onclick();assert.equal(node('#sound-toggle').textContent,'🔇');node('#sound-toggle').onclick();assert.equal(node('#sound-toggle').textContent,'🔊');
 // Slower WASD-only manual controls, physical key codes and auto lifecycle.
 run("tab='mine';qte=null;swing=null;state.pending=null;state.tools[0].dur=40;state.player.energy=M.maxEnergy(state)");
 const keydown=(key,code)=>{for(const h of events.keydown)h({key,code,target:{tagName:'BODY'},preventDefault(){}});};

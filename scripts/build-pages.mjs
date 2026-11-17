@@ -13,7 +13,7 @@ await mkdir(output, {recursive:true});
 for(const name of ['style.css','game-ui.css','manifest.webmanifest','LICENSE']){
   await copyFile(path.join(root,name),path.join(output,name));
 }
-const runtime=['engine.js','progression.js','assets/kenney/rocks.js','storage.js'];
+const runtime=['engine.js','progression.js','assets/kenney/rocks.js','storage.js','audio.js'];
 const sources=await Promise.all(runtime.map(name=>readFile(path.join(root,name),'utf8')));
 const game=await readFile(path.join(root,'game.js'),'utf8');
 const combined=`(()=>{${sources.join('\n;\n')}\n;(async()=>{${game}\n})().catch(error=>{console.error(error);document.querySelector('#savehint').textContent='เปิดเกมไม่ได้ กรุณาโหลดหน้าใหม่';});})();`;
