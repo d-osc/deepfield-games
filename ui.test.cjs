@@ -35,13 +35,15 @@ run('rings.forEach(r=>r.duration=300)');now=4000;run('tickRings(4000)');assert.e
 run('rings=[{...rings[0],id:100,start:4000,duration:1000},{...rings[0],id:101,start:4000,duration:1000}];nextRingAt=10000');
 now=4000+1000*85/110;const energy=run('state.player.energy'),cost=run('M.energyCost(state)'),hits=run('state.hits');
 tap({isTrusted:false});tap({button:2});tap({isPrimary:false});assert.equal(run('state.hits'),hits);
-tap({pointerType:'touch'});assert.equal(run('rings.length'),1);assert.equal(run('rings[0].id'),100);assert.equal(run('state.hits'),hits+1);assert.equal(run('state.player.energy'),energy-cost);assert(node('#toast').textContent.includes('100%'));assert.equal(run('state.pending'),null);
-tap();assert.equal(run('state.hits'),hits+1); // Swing cooldown cannot pay twice.
-now+=900;run(`updateSwing(${now})`);run('tickRings('+now+')');assert.equal(run('state.hits'),hits+1); // Untouched second ring expired free.
+tap({pointerType:'touch'});assert.equal(run('rings.length'),0);assert.equal(run('state.hits'),hits+2);assert.equal(run('state.player.energy'),energy-cost*2);assert(node('#toast').textContent.includes('100%'));assert.equal(run('state.pending'),null);
+tap();assert.equal(run('state.hits'),hits+2); // Already consumed rings cannot pay twice.
+now+=900;run(`updateSwing(${now})`);run('tickRings('+now+')');assert.equal(run('state.hits'),hits+2); // No additional hits on expiration.
 const afterHit=run('JSON.stringify(state)');run('stopAuto();tickRings(9000)');click({tab:'bag'});assert.equal(run('rings.length'),0);assert.equal(run('JSON.stringify(state)'),afterHit);
 click({tab:'mine'});run('tickRings(10000)');box.document.hidden=true;for(const h of events.visibilitychange)h();assert.equal(run('rings.length'),0);assert.equal(run('JSON.stringify(state)'),afterHit);box.document.hidden=false;
+// Rapid taps and a second touch are accepted during the current swing.
+click({tab:'mine'});run('stopAuto();pendingImpacts=[];nextRingAt=1e9;begin(5000);rings[0].duration=3000');now=6000;const rapidHits=run('state.hits');tap();assert.equal(run('state.hits'),rapidHits+1);run('begin(5000);rings[0].duration=3000');tap({pointerType:'touch',isPrimary:false});assert.equal(run('state.hits'),rapidHits+2);assert.equal(run('pendingImpacts.length'),2);run('updateSwing(6400)');assert(run('pendingImpacts.every(hit=>hit.impacted)'));const fragmentsAfterRapid=run('rockFragments.length');run('updateSwing(6400)');assert.equal(run('rockFragments.length'),fragmentsAfterRapid);
 // Resource shortages never consume a ring or charge state.
-run('state.player.energy=0;stopAuto();tickRings(11000)');now=run('rings[0].start+rings[0].duration*85/110');const noEnergyHits=run('state.hits');tap();assert.equal(run('state.hits'),noEnergyHits);assert.equal(run('rings.length'),1);
+run('state.player.energy=0;stopAuto();tickRings(11000);nextRingAt=1e9');now=run('rings[0].start+rings[0].duration*85/110');const noEnergyHits=run('state.hits');tap();assert.equal(run('state.hits'),noEnergyHits);assert.equal(run('rings.length'),1);
 run('state.player.energy=M.maxEnergy(state);state.tools[0].dur=0');tap();assert.equal(run('state.hits'),noEnergyHits);
 run('state.tools[0].dur=40;stopAuto();swing=null');const aimBefore=run('JSON.stringify(projectTool(pickaxePoint([0,0,0],0,0)))');for(const h of events.pointermove)h({clientX:800,clientY:100,isPrimary:true,target:{closest:()=>node('.scene')}});assert.notEqual(run('JSON.stringify(projectTool(pickaxePoint([0,0,0],0,0)))'),aimBefore);
 // All mine scenes, tools and ring boundaries still render across viewports.

@@ -1,5 +1,5 @@
 const M=Mining,$=s=>document.querySelector(s);let state=M.fresh(),tab='mine',bagTab='ores',sector=0,qte=null,logs=[],particles=[],flash=0,swing=null,lastFrame=0,frameStep=1,lootDrops=[],lootBursts=[],lootBannerUntil=0,lootArrivalUntil=0;
-let pointerAim={x:.5,y:.5},rings=[],nextRingAt=0,ringSequence=0,pressBlasts=[],rockFragments=[];
+let pointerAim={x:.5,y:.5},rings=[],nextRingAt=0,ringSequence=0,pendingImpacts=[],pressBlasts=[],rockFragments=[];
 const reducedEffects=globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches??false;
 $('#sound-toggle').onclick=()=>{const enabled=SoundFX.toggle();$('#sound-toggle').textContent=enabled?'🔊':'🔇';$('#sound-toggle').setAttribute?.('aria-pressed',String(enabled));$('#sound-toggle').setAttribute?.('aria-label',enabled?'ปิดเสียง':'เปิดเสียง');};
 let loadFailed=false;
@@ -113,20 +113,19 @@ function finish(quality,reason,playerInput=false){
  let msg=result.ore?`${result.critical?'✦ PERFECT! ':''}${result.quality}% • ${result.ore.name} +${result.amount}`:'0% • ขุดพลาด ไม่ได้รับแร่';
  if(result.rockBroken)msg+=' • หินแตก! หินก้อนใหม่พร้อมขุด';if(result.unlockedMine!==null&&result.unlockedMine!==undefined)msg+=' • ปลดล็อก '+M.mines[result.unlockedMine].name;
  if(result.bonus)msg+=` • โบนัส ${result.bonus.name} +1`;if(result.triggered)msg+=` • ✦ ${result.effect.name}`;if(reason)msg+=' • '+reason;msg+=` • EXP +${result.xp}`;if(result.levels)msg+=` • LEVEL UP! Lv.${state.player.level}`;
- toast(msg);logs.unshift(msg);swing={aim:{...pointerAim},start:performance.now(),critical:result.critical,color:result.ore?.color||'#889b90',impacted:false,loot:result};if(M.tool(state).dur===0)toast(msg+' • อีเตอร์พังแล้ว ไปซ่อมได้ที่ร้านซ่อม');save();render();
+ toast(msg);logs.unshift(msg);swing={aim:{...pointerAim},start:performance.now(),critical:result.critical,color:result.ore?.color||'#889b90',impacted:false,loot:result};pendingImpacts.push(swing);if(M.tool(state).dur===0)toast(msg+' • อีเตอร์พังแล้ว ไปซ่อมได้ที่ร้านซ่อม');save();render();
 }
 function pointerPosition(e){const rect=$('#world').getBoundingClientRect();if(rect.width>0&&rect.height>0&&Number.isFinite(e.clientX)&&Number.isFinite(e.clientY))pointerAim={x:Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width)),y:Math.max(0,Math.min(1,(e.clientY-rect.top)/rect.height))};}
 function playerAction(e){
- if(e.isTrusted!==true||document.hidden||tab!=='mine'||swing)return;
+ if(e.isTrusted!==true||document.hidden||tab!=='mine')return;
  const now=performance.now(),x=pointerAim.x*W,y=pointerAim.y*H;
  if(!onBoulder(x,y))return;
- const target=[...rings].reverse().find(ring=>now>=ring.start&&now-ring.start<ring.duration&&Math.hypot(x-ring.x/100*W,y-ring.y/100*H)<=75*ring.scale);
- if(!target)return;
- SoundFX.unlock();const started=M.startMining(state,sector);if(!started.ok){toast(started.message);renderPlayer();return;}
- qte=target;finish(M.score((now-target.start)/target.duration),'',true);tickRings(now);
+ const targets=[...rings].reverse().filter(ring=>now>=ring.start&&now-ring.start<ring.duration&&Math.hypot(x-ring.x/100*W,y-ring.y/100*H)<=Math.max(24,(75-55*(now-ring.start)/ring.duration)*ring.scale+8));
+ if(!targets.length)return;
+ SoundFX.unlock();for(const target of targets){const started=M.startMining(state,sector);if(!started.ok){toast(started.message);renderPlayer();break;}qte=target;finish(M.score((now-target.start)/target.duration),'',true);}tickRings(now);
 }
 document.addEventListener('pointermove',e=>{if(tab==='mine'&&e.isPrimary!==false&&e.target.closest?.('.scene'))pointerPosition(e);});
-document.addEventListener('pointerdown',e=>{if(e.isTrusted!==true||e.isPrimary===false||e.button!==0||!e.target.closest?.('.scene')||e.target.closest('button,a,input,select,summary,label'))return;e.preventDefault();pointerPosition(e);playerAction(e);});
+document.addEventListener('pointerdown',e=>{if(e.isTrusted!==true||(e.isPrimary===false&&e.pointerType!=='touch')||e.button!==0||!e.target.closest?.('.scene')||e.target.closest('button,a,input,select,summary,label'))return;e.preventDefault();pointerPosition(e);playerAction(e);});
 document.addEventListener('keydown',e=>{
  if(e.key==='Escape'){e.preventDefault();stopAuto();if(qte)finish(0,'ยกเลิกการขุด');if(tab!=='mine')openPanel('mine');return;}
  if(e.key==='Tab'&&tab!=='mine'){
@@ -328,15 +327,18 @@ function drawRockFragments(now){
  ctx.save();ctx.translate(f.x*W+f.vx*seconds,f.y*H+f.vy*seconds+240*seconds*seconds);ctx.rotate(f.rotation+seconds*4);ctx.globalAlpha=1-t;ctx.fillStyle=f.shade;ctx.strokeStyle='#26362b';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-f.size*.6,-f.size*.4);ctx.lineTo(f.size*.4,-f.size*.6);ctx.lineTo(f.size*.65,f.size*.2);ctx.lineTo(-f.size*.2,f.size*.65);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();}
  rockFragments=rockFragments.filter(f=>now-f.start<f.duration);
 }
-function updateSwing(now){if(!swing)return;let elapsed=now-swing.start;
- if(elapsed>=320&&!swing.impacted){swing.impacted=true;flash=swing.critical?1:.4;
-  let tip=[swing.aim.x*W,swing.aim.y*H];
-  if(swing.loot?.ore){spawnRockFragments(tip,now,!!swing.loot.rockBroken);SoundFX.play('impact',swing.critical||swing.loot.rockBroken);}
-  if(swing.loot?.ore)spawnLootEffects(swing.loot,tip,now);
-  for(let i=0;i<(swing.critical?48:22);i++)particles.push({x:tip[0],y:tip[1],vx:(Math.random()-.5)*(swing.critical?15:9),vy:-2-Math.random()*7,life:1,color:i%3?swing.color:'#f7f9d0'});
+function updateSwing(now){
+ for(const strike of pendingImpacts){
+  if(now-strike.start<320||strike.impacted)continue;
+  strike.impacted=true;flash=Math.max(flash,strike.critical?1:.4);
+  const tip=[strike.aim.x*W,strike.aim.y*H];
+  if(strike.loot?.ore){spawnRockFragments(tip,now,!!strike.loot.rockBroken);SoundFX.play('impact',strike.critical||strike.loot.rockBroken);spawnLootEffects(strike.loot,tip,now);}
+  for(let i=0;i<(strike.critical?48:22);i++)particles.push({x:tip[0],y:tip[1],vx:(Math.random()-.5)*(strike.critical?15:9),vy:-2-Math.random()*7,life:1,color:i%3?strike.color:'#f7f9d0'});
  }
- if(elapsed>=850){swing=null;render();}
+ particles=particles.slice(-240);pendingImpacts=pendingImpacts.filter(strike=>now-strike.start<850);
+ if(swing&&now-swing.start>=850){swing=null;render();}
 }
+
 dropSector=sector;render();resize();requestAnimationFrame(frame);
 setInterval(()=>{if(M.recover(state)){renderPlayer();save();}},1000);
 
