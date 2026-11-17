@@ -47,7 +47,7 @@ run('state.tools[0].dur=40;stopAuto();swing=null');const aimBefore=run('JSON.str
 // All mine scenes, tools and ring boundaries still render across viewports.
 run('state.unlocked=M.mines.map((m,i)=>i)');for(let i=0;i<50;i++){click({sector:String(i)});assert.equal(node('#rockname').textContent,run(`M.mines[${i}].name`));}
 for(let i=0;i<100;i++)run(`state.tools[0].type=${i};state.tools[0].dur=M.types[${i}].dur;tab='upgrade';renderStore();drawPickaxe(100)`);
-for(const [width,height] of [[900,430],[390,844],[844,390]])for(let i=0;i<50;i++){run(`W=${width};H=${height};sector=${i}`);assert(run('(()=>{const location=ringLocation();return ringFits(location.x/100*W,location.y/100*H,location.scale*78+3);})()'));}
+for(const [width,height] of [[900,430],[390,844],[390,674],[320,568],[844,390]])for(let i=0;i<50;i++){run(`W=${width};H=${height};sector=${i}`);assert(run('(()=>{const location=ringLocation();return ringFits(location.x/100*W,location.y/100*H,location.scale*78+3);})()'));}
 run('W=900;H=430;sector=0;rockFragments=[];spawnRockFragments([450,200],0,true);drawRockFragments(2000)');assert.equal(run('rockFragments.length'),0);
 node('#sound-toggle').onclick();assert.equal(node('#sound-toggle').textContent,'🔇');
 await run('SaveStorage.flush()');assert.equal(saved.format,'deepfield-local-chain');assert(run('M.valid(state)'));

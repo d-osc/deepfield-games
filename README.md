@@ -83,3 +83,5 @@ Mobile layout includes touch-sized controls, portrait and short landscape rules,
 The rock now fills a larger central area on desktop and mobile. Rings are placed by testing their circumference against projected rock faces, with responsive scaling and resize repositioning. Scene clicks outside the rock do not resolve mining. Each swing locks its clicked impact position; the pickaxe tip, stone chips and loot originate at that point even if the pointer moves during the swing.
 
 Rock durability balance revision 2 doubles all mine rock HP. Existing rock saves migrate remaining HP proportionally once (15/30 becomes 30/60); subsequent loads preserve the migrated values.
+
+Portrait mobile HUD uses a compact player/energy strip, a bag counter instead of the full ore list, a short tool durability strip and full-width bottom navigation. The mine title/deposits stay above the reserved central rock area, while feedback sits between the tool strip and navigation. Rock projection reserves HUD space rather than drawing behind panels. Verified in-browser at 390×844 and 390×674; ring bounds also cover 320×568.
