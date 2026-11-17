@@ -65,3 +65,7 @@ Local saves use a local blockchain-style hash chain in localStorage, without enc
 ## SEO and branding
 
 Game icons and the 1200×630 social cover are stored in `assets/marketing/`. The page includes favicon, Apple touch icon, web manifest, Thai description, Open Graph and Twitter Card metadata. Canonical and social image URLs assume the GitHub Pages address `https://d-osc.github.io/deepfield-games/` based on the repository remote; update these in `index.html` if deploying to another domain.
+
+## Protected production build
+
+Run `npm ci`, `npm test`, `npm run build`, then `npm run test:build`. Builds regenerate `dist/` and replace runtime sources with a minified, obfuscated `game.bundle.js`, without source maps. Original source files stay readable in the checkout. GitHub Pages installs locked dev dependencies before building and verifies the generated bundle. Obfuscation raises the effort of reading code; it cannot prevent browser downloads, copying images, reverse engineering, or client-side save manipulation. A public source repository still exposes the original code.
