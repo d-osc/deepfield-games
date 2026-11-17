@@ -21,7 +21,7 @@
 
 ## การขุด 0–100%
 
-เลือกเหมือง แล้วกด W/A/S/D หรือปุ่มขุด จากนั้นกดปุ่ม W/A/S/D ตามที่แสดง รองรับตำแหน่งปุ่มเดิมแม้ใช้คีย์บอร์ดภาษาไทย หรือเปิดปุ่มขุด Auto เพื่อจับจังหวะให้อัตโนมัติ
+เลือกเหมือง แล้วกด W/A/S/D หรือปุ่มขุด จากนั้นกดปุ่ม W/A/S/D ตามที่แสดง รองรับตำแหน่งปุ่มเดิมแม้ใช้คีย์บอร์ดภาษาไทย หรือเปิดปุ่มขุด Auto เพื่อเริ่มรอบต่อเนื่อง โดยยังต้องกด W/A/S/D จับจังหวะเอง
 
 - วงบีบสุ่ม 0.3–3 วินาทีก่อนดีบัฟแรงสั่นสะเทือน โดยยังไม่ต่ำกว่า 0.3 วินาที
 - กดถูกปุ่มตอนวงสีขาวทับเส้นเขียวได้ 100% (Perfect) กดก่อนหรือหลังคิดเปอร์เซ็นต์จากระยะห่างของเส้นวง
@@ -70,6 +70,6 @@ Game icons and the 1200×630 social cover are stored in `assets/marketing/`. The
 
 Run `npm ci`, `npm test`, `npm run build`, then `npm run test:build`. Builds regenerate `dist/` and replace runtime sources with a minified, obfuscated `game.bundle.js`, without source maps. Original source files stay readable in the checkout. GitHub Pages installs locked dev dependencies before building and verifies the generated bundle. Obfuscation raises the effort of reading code; it cannot prevent browser downloads, copying images, reverse engineering, or client-side save manipulation. A public source repository still exposes the original code.
 
-Mining controls: W/A/S/D starts a manual attempt and the displayed W/A/S/D key resolves it. The ring lasts 0.3–3 seconds depending on mine timing effects. Auto repeatedly resolves attempts at the perfect ring position using normal energy and durability costs. It stops on insufficient energy, broken tools, Escape, opening a menu or hiding the page. Auto is session-only and does not resume from saves.
+Mining controls: W/A/S/D starts a manual attempt and the displayed W/A/S/D key resolves it. The ring lasts 0.3–3 seconds depending on mine timing effects. Auto starts subsequent attempts using normal energy and durability costs, but the player must press the displayed W/A/S/D key to resolve each attempt. No input or a wrong key yields no ore. It stops on insufficient energy, broken tools, Escape, opening a menu or hiding the page. Auto is session-only and does not resume from saves.
 
 Mining feedback includes expanding bursts at the timing ring, golden Perfect rays, and synthesized start/press/miss/rock-impact sounds via Web Audio. Sounds start after a player gesture; use the speaker button to mute for the session. Effects and audio work offline without downloaded sound files. Reduced-motion mode simplifies the new bursts.

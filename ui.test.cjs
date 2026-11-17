@@ -52,7 +52,11 @@ keydown('w','KeyW');assert(run('!!qte'));assert(run('qte.duration>=300&&qte.dura
 keydown('x','KeyX');assert(run('!!qte'));
 const physical=run('qte.key');now=run('qte.start+qte.duration*(85/110)');keydown('ไ','Key'+physical);assert.equal(run('qte'),null);assert(node('#toast').textContent.includes('100%'));
 run('swing=null');node('#auto-mine').onclick();assert(run('autoMining'));assert(run('!!qte'));
-const hitsBefore=run('state.hits');now=run('qte.start+qte.duration*(85/110)+1');run(`frame(${now})`);assert.equal(run('qte'),null);assert.equal(run('state.hits'),hitsBefore+1);
+const hitsBefore=run('state.hits'),oresBeforeAuto=run('JSON.stringify(state.ores)');
+now=run('qte.start+qte.duration*(85/110)+1');run(`frame(${now})`);assert(run('!!qte'));assert.equal(run('state.hits'),hitsBefore);assert.equal(run('JSON.stringify(state.ores)'),oresBeforeAuto);
+now=run('qte.start+qte.duration+1');run(`frame(${now})`);assert.equal(run('qte'),null);assert.equal(run('state.hits'),hitsBefore+1);assert.equal(run('JSON.stringify(state.ores)'),oresBeforeAuto);assert(node('#toast').textContent.includes('หมดเวลา'));
+now+=900;run(`frame(${now})`);assert(run('!!qte'));const autoKey=run('qte.key');now=run('qte.start+qte.duration*(85/110)');keydown(autoKey,'Key'+autoKey);assert.equal(run('qte'),null);assert(node('#toast').textContent.includes('100%'));assert.notEqual(run('JSON.stringify(state.ores)'),oresBeforeAuto);
+now+=900;run(`frame(${now})`);assert(run('!!qte'));const wrongAuto=run("qte.key==='W'?'A':'W'"),beforeWrong=run('JSON.stringify(state.ores)');keydown(wrongAuto,'Key'+wrongAuto);assert.equal(run('qte'),null);assert.equal(run('JSON.stringify(state.ores)'),beforeWrong);
 now+=900;run(`frame(${now})`);assert(run('!!qte'));assert(run('autoMining'));
 node('#auto-mine').onclick();assert.equal(run('autoMining'),false);assert(run('!!qte'));
 keydown('Escape','Escape');assert.equal(run('qte'),null);
