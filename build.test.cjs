@@ -8,7 +8,7 @@ const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path'),asse
  const bundle=fs.readFileSync(path.join(root,'game.bundle.js'),'utf8');assert(!bundle.includes('sourceMappingURL'));assert(!bundle.includes('function renderPlayer('));
  const events={},nodes=new Map(),gradient={addColorStop(){}};let now=0;
  const context=new Proxy({createLinearGradient:()=>gradient,createRadialGradient:()=>gradient},{get:(o,k)=>k in o?o[k]:()=>{},set:(o,k,v)=>(o[k]=v,true)});
- function node(k){if(!nodes.has(k))nodes.set(k,{style:{},textContent:'',innerHTML:'',clientWidth:900,clientHeight:430,getContext:()=>context,classList:{toggle(){}},scrollIntoView(){},focus(){}});return nodes.get(k);}
+ function node(k){if(!nodes.has(k))nodes.set(k,{style:{},textContent:'',innerHTML:'',clientWidth:900,clientHeight:430,getContext:()=>context,getBoundingClientRect:()=>({left:0,top:0,width:900,height:430}),classList:{toggle(){}},scrollIntoView(){},focus(){}});return nodes.get(k);}
  const legacy=require('./engine.js').fresh();legacy.money=10000;const values=new Map([['deepfield-v1',JSON.stringify(legacy)]]),errors=[];
  const box={crypto:require('node:crypto').webcrypto,TextEncoder,TextDecoder,btoa,atob,document:{querySelector:node,querySelectorAll:()=>[],addEventListener:(k,f)=>(events[k]??=[]).push(f)},localStorage:{getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,v)},ResizeObserver:class{observe(){}},requestAnimationFrame(){},setInterval(){},performance:{now:()=>now},devicePixelRatio:1,console:{log(){},warn(){},error:e=>errors.push(e)}};
  vm.createContext(box);vm.runInContext(bundle,box,{timeout:10000});
@@ -17,9 +17,8 @@ const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path'),asse
  const click=dataset=>{for(const handler of events.click??[])handler({target:{closest:()=>({dataset})}});};
  click({tab:'map'});assert.equal(node('#game-window').hidden,false);assert.equal((node('#deposits').innerHTML.match(/data-rate=/g)||[]).length,50);
  click({action:'unlock',id:'1'});click({sector:'1'});assert.equal(node('#rockname').textContent,box.Mining.mines[1].name);
- click({tab:'mine'});node('#mine').onclick();assert(node('#prompt').innerHTML.includes('qte'));
- const key=node('#prompt').innerHTML.match(/<b>([^<]+)<\/b>/)[1];now=1000;
- for(const handler of events.keydown)handler({key,code:'Key'+key,isTrusted:true,target:{tagName:'BODY'},preventDefault(){}});
+ click({tab:'mine'});node('#mine').onclick({isTrusted:true});assert(node('#prompt').innerHTML.includes('qte'));
+ now=1000;for(const handler of events.pointerdown)handler({isTrusted:true,isPrimary:true,button:0,clientX:450,clientY:200,target:{closest:selector=>selector==='.scene'?node('.scene'):null},preventDefault(){}});
  await until(()=>{try{return JSON.parse(values.get('deepfield-v1')).blocks?.at(-1).data.pending===null;}catch{return false;}});
  const saved=JSON.parse(values.get('deepfield-v1'));assert.equal(saved.format,'deepfield-local-chain');assert.equal(saved.blocks.at(-1).data.sector,1);assert.equal(errors.length,0);
  assert(node('#playercard').innerHTML.includes('Lv.'));console.log('PASS: production bundle startup, migration, map, unlock/travel, mining and hash-chain save; no original JS or source maps published');

@@ -8,7 +8,7 @@
 
 ฉากเหมืองแสดงเต็มพื้นที่หน้าต่าง พร้อม HUD เลเวล/กำลังด้านซ้ายบน เงินและแร่ที่เก็บได้ด้านขวา อีเตอร์ที่สวมใส่ด้านซ้ายล่าง และแถบเมนูเกมด้านล่าง ร้านค้า กระเป๋า ซ่อม อัปเกรด และแผนที่เปิดเป็นหน้าต่างทับฉาก ปิดด้วย Escape หรือปุ่ม X ร้านค้าแยกหมวดขายแร่ อีเตอร์ และอาหาร
 
-ปุ่มลัด: W/A/S/D ขุด, M แผนที่เหมือง, C ร้านค้า, R ซ่อม, U อัปเกรด, B กระเป๋า เมนูเซฟอยู่ที่ปุ่มเฟืองมุมขวาบน และมีปุ่มขยายเต็มหน้าจอ การเลือกเข้าเหมืองจากแผนที่จะปิดหน้าต่างและกลับไปขุดทันที
+ควบคุม: คลิกเมาส์หรือแตะเพื่อขุด, M แผนที่เหมือง, C ร้านค้า, R ซ่อม, U อัปเกรด, B กระเป๋า เมนูเซฟอยู่ที่ปุ่มเฟืองมุมขวาบน และมีปุ่มขยายเต็มหน้าจอ การเลือกเข้าเหมืองจากแผนที่จะปิดหน้าต่างและกลับไปขุดทันที
 
 ## ผู้เล่นและกำลัง
 
@@ -21,7 +21,7 @@
 
 ## การขุด 0–100%
 
-เลือกเหมือง แล้วกด W/A/S/D หรือปุ่มขุด จากนั้นกดปุ่ม W/A/S/D ตามที่แสดง รองรับตำแหน่งปุ่มเดิมแม้ใช้คีย์บอร์ดภาษาไทย หรือเปิดปุ่มขุด Auto เพื่อเริ่มรอบต่อเนื่อง โดยยังต้องกด W/A/S/D จับจังหวะเอง
+เลือกเหมือง คลิกหรือแตะฉาก/ปุ่มขุดเพื่อเริ่มวง แล้วคลิกหรือแตะอีกครั้งเมื่อวงทับเส้นเป้าหมาย อีเตอร์ขยับตามเมาส์หรือตำแหน่งสัมผัส ปุ่มเริ่มรอบต่อเนื่องเริ่มวงถัดไปให้ แต่ผู้เล่นต้องคลิก/แตะจับจังหวะเองทุกครั้ง
 
 - วงบีบสุ่ม 0.3–3 วินาทีก่อนดีบัฟแรงสั่นสะเทือน โดยยังไม่ต่ำกว่า 0.3 วินาที
 - กดถูกปุ่มตอนวงสีขาวทับเส้นเขียวได้ 100% (Perfect) กดก่อนหรือหลังคิดเปอร์เซ็นต์จากระยะห่างของเส้นวง
@@ -70,10 +70,12 @@ Game icons and the 1200×630 social cover are stored in `assets/marketing/`. The
 
 Run `npm ci`, `npm test`, `npm run build`, then `npm run test:build`. Builds regenerate `dist/` and replace runtime sources with a minified, obfuscated `game.bundle.js`, without source maps. Original source files stay readable in the checkout. GitHub Pages installs locked dev dependencies before building and verifies the generated bundle. Obfuscation raises the effort of reading code; it cannot prevent browser downloads, copying images, reverse engineering, or client-side save manipulation. A public source repository still exposes the original code.
 
-Mining controls: W/A/S/D starts a manual attempt and the displayed W/A/S/D key resolves it. The ring lasts 0.3–3 seconds depending on mine timing effects. Auto starts subsequent attempts using normal energy and durability costs, but the player must press the displayed W/A/S/D key to resolve each attempt. No input or a wrong key yields no ore. It stops on insufficient energy, broken tools, Escape, opening a menu or hiding the page. Auto is session-only and does not resume from saves.
+Mining controls: primary mouse clicks or touchscreen taps start and resolve attempts. WASD no longer controls mining. The ring lasts 0.3–3 seconds depending on mine timing effects. Auto starts subsequent attempts using normal energy and durability costs, but the player must click or tap at the correct time to resolve each attempt. No input or zero-quality timing yields no ore. It stops on insufficient energy, broken tools, Escape, opening a menu or hiding the page. Auto is session-only and does not resume from saves.
 
 Mining feedback includes expanding bursts at the timing ring, golden Perfect rays, and synthesized start/press/miss/rock-impact sounds via Web Audio. Sounds start after a player gesture; use the speaker button to mute for the session. Effects and audio work offline without downloaded sound files. Reduced-motion mode simplifies the new bursts.
 
-Continuous rounds only start the next ring. Rewards require a non-repeating trusted W/A/S/D keyboard event from the player; timeouts and scripted DOM keyboard events cannot award ore through this UI. Production HTML versions the bundle URL to refresh browser caches. This remains client-side behavior, not server anti-cheat.
+Continuous rounds only start the next ring. Rewards require a trusted primary pointer event or activation of the mining button from the player; timeouts and scripted DOM pointer events cannot award ore through this UI. Production HTML versions the bundle URL to refresh browser caches. This remains client-side behavior, not server anti-cheat.
 
 Rock durability is saved separately for all 50 mines (maximum 30 + mine index × 12). Successful player-timed hits deal damage from tool power, upgrades and timing quality; misses do not damage rock. Breaking a rock unlocks the next mine for free and resets the current mine to a fresh full-durability rock without changing location. The final mine respawns rocks without an out-of-range unlock. Each successful impact emits stone chips; a break produces a larger shatter and respawn animation. Timing and result percentages use larger text. Legacy saves receive full rock durability automatically.
+
+Mobile layout includes touch-sized controls, portrait and short landscape rules, safe-area padding, and scene touch handling without unwanted scrolling. Panels remain scrollable. Mining ignores secondary mouse buttons, secondary fingers and UI controls outside the mining button. The pickaxe tracks normalized scene pointer coordinates so resizing does not change the input scale.
