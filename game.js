@@ -105,7 +105,7 @@ function tickRings(now){
  if(document.hidden||tab!=='mine')return;
  rings=rings.filter(ring=>now-ring.start<ring.duration);
  if(now>=nextRingAt){begin(now);nextRingAt=now+350+Math.random()*400;}
- $('#prompt').innerHTML=rings.map(ring=>{const progress=Math.max(0,(now-ring.start)/ring.duration),size=150-110*progress,quality=M.score(progress);return `<div class="qte" data-ring-id="${ring.id}" style="left:${ring.x}%;top:${ring.y}%;transform:translate(-50%,-50%) scale(${ring.scale})"><i class="target"></i><i class="ring" style="width:${size}px;height:${size}px;border-color:${quality===100?'#c4f589':'#fff'}"></i><b>แตะ</b><small class="qte-score">${quality}%</small></div>`;}).join('');
+ $('#prompt').innerHTML=rings.map(ring=>{const progress=Math.max(0,(now-ring.start)/ring.duration),size=150-110*progress,quality=M.score(progress);return `<div class="qte" data-ring-id="${ring.id}" style="left:${ring.x}%;top:${ring.y}%;transform:translate(-50%,-50%) scale(${ring.scale})"><i class="target"></i><i class="ring" style="width:${size}px;height:${size}px;border-color:${quality===100?'#c4f589':'#fff'}"></i><b>แตะ</b></div>`;}).join('');
 }
 function finish(quality,reason,playerInput=false){
  if(!qte)return;const percent=playerInput?(typeof quality==='boolean'?(quality?100:0):quality):0;const target=qte;rings=rings.filter(ring=>ring.id!==target.id);qte=null;let result=M.mine(state,percent,sector);if(!result)return;
