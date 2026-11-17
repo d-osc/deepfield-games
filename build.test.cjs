@@ -19,7 +19,7 @@ const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path'),asse
  click({action:'unlock',id:'1'});click({sector:'1'});assert.equal(node('#rockname').textContent,box.Mining.mines[1].name);
  click({tab:'mine'});node('#mine').onclick();assert(node('#prompt').innerHTML.includes('qte'));
  const key=node('#prompt').innerHTML.match(/<b>([^<]+)<\/b>/)[1];now=1000;
- for(const handler of events.keydown)handler({key,code:'Key'+key,target:{tagName:'BODY'},preventDefault(){}});
+ for(const handler of events.keydown)handler({key,code:'Key'+key,isTrusted:true,target:{tagName:'BODY'},preventDefault(){}});
  await until(()=>{try{return JSON.parse(values.get('deepfield-v1')).blocks?.at(-1).data.pending===null;}catch{return false;}});
  const saved=JSON.parse(values.get('deepfield-v1'));assert.equal(saved.format,'deepfield-local-chain');assert.equal(saved.blocks.at(-1).data.sector,1);assert.equal(errors.length,0);
  assert(node('#playercard').innerHTML.includes('Lv.'));console.log('PASS: production bundle startup, migration, map, unlock/travel, mining and hash-chain save; no original JS or source maps published');

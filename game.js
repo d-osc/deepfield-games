@@ -11,7 +11,7 @@ function cost(c){return Object.entries(c).filter(([,v])=>v).map(([k,v])=>k==='mo
 function btn(label,action,id,disabled=false){return `<button data-action="${action}" data-id="${id}" ${disabled?'disabled':''}>${label}</button>`;}
 function effectBadge(type){const e=M.types[type].effect;return `<div class="effect-info"><strong>✦ ${e.name}</strong><span>${e.description}</span></div>`;}
 let dropSector=0,dropQuality=100;
-function renderAuto(){const button=$('#auto-mine');button.textContent=autoMining?'■ หยุด Auto':'▶ ขุด Auto';button.setAttribute?.('aria-pressed',String(autoMining));}
+function renderAuto(){const button=$('#auto-mine');button.textContent=autoMining?'■ หยุดรอบต่อเนื่อง':'▶ เริ่มรอบต่อเนื่อง';button.setAttribute?.('aria-pressed',String(autoMining));}
 function stopAuto(){autoMining=false;renderAuto();}
 function renderPlayer(){
  renderAuto();
@@ -105,8 +105,8 @@ function begin(){
  let key='WASD'[Math.floor(Math.random()*4)];qte={key,start:performance.now(),duration:Math.max(300,Math.min(3000,(300+Math.random()*2700)*M.timingFactor(state,sector))),x:30+Math.random()*40,y:28+Math.random()*25};
  $('#prompt').innerHTML=`<div class="qte" style="left:${qte.x}%;top:${qte.y}%"><i class="target"></i><i class="ring"></i><b>${key}</b><small class="qte-score">0%</small></div>`;toast('กด '+key+' เมื่อวงสีขาวทับเส้นเขียว • ตรงเส้น 100%');save();render();
 }
-function finish(quality,reason){
- if(!qte)return;const percent=typeof quality==='boolean'?(quality?100:0):quality;const target=qte;qte=null;$('#prompt').innerHTML='';let result=M.mine(state,percent,sector);if(!result)return;
+function finish(quality,reason,playerInput=false){
+ if(!qte)return;const percent=playerInput?(typeof quality==='boolean'?(quality?100:0):quality):0;const target=qte;qte=null;$('#prompt').innerHTML='';let result=M.mine(state,percent,sector);if(!result)return;
  if(!document.hidden){spawnPressBlast(target,result.quality,performance.now());SoundFX.play(result.ore?'press':'miss',result.critical);}
  let msg=result.ore?`${result.critical?'✦ PERFECT! ':''}${result.quality}% • ${result.ore.name} +${result.amount}`:'0% • ขุดพลาด ไม่ได้รับแร่';
  if(result.bonus)msg+=` • โบนัส ${result.bonus.name} +1`;if(result.triggered)msg+=` • ✦ ${result.effect.name}`;if(reason)msg+=' • '+reason;msg+=` • EXP +${result.xp}`;if(result.levels)msg+=` • LEVEL UP! Lv.${state.player.level}`;
@@ -122,7 +122,7 @@ document.addEventListener('keydown',e=>{
  }
  if(e.repeat||e.ctrlKey||e.metaKey||e.altKey||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;
  const miningKey=/^Key[WASD]$/.test(e.code||'')?e.code.slice(3):(/^[wasd]$/i.test(e.key)?e.key.toUpperCase():null);
- if(miningKey){e.preventDefault();SoundFX.unlock();if(qte){let p=(performance.now()-qte.start)/qte.duration,correct=miningKey===qte.key;finish(correct?M.score(p):0,correct?'':'ผิดปุ่ม');}else begin();return;}
+ if(miningKey){if(e.isTrusted!==true)return;e.preventDefault();SoundFX.unlock();if(qte){let p=(performance.now()-qte.start)/qte.duration,correct=miningKey===qte.key;finish(correct?M.score(p):0,correct?'':'ผิดปุ่ม',true);}else begin();return;}
  if(qte)return;
  const shortcut={b:'bag',m:'map',c:'shop',r:'repair',u:'upgrade'}[e.key.toLowerCase()];if(shortcut){e.preventDefault();openPanel(tab===shortcut?'mine':shortcut);}
 });

@@ -1,5 +1,6 @@
 import { mkdir, copyFile, readdir, readFile, writeFile, rm } from 'node:fs/promises';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { transform } from 'esbuild';
 import JavaScriptObfuscator from 'javascript-obfuscator';
@@ -28,7 +29,8 @@ const protectedCode=JavaScriptObfuscator.obfuscate(minified.code,{
 await writeFile(path.join(output,'game.bundle.js'),protectedCode);
 let html=await readFile(path.join(root,'index.html'),'utf8');
 html=html.replace(/<script\b[^>]*\bsrc="[^"]+"[^>]*><\/script>/g,'');
-html=html.replace('</body>','<script defer src="game.bundle.js"></script></body>');
+const revision=createHash('sha256').update(protectedCode).digest('hex').slice(0,12);
+html=html.replace('</body>',`<script defer src="game.bundle.js?v=${revision}"></script></body>`);
 await writeFile(path.join(output,'index.html'),html);
 async function assets(from,to){
   await mkdir(to,{recursive:true});

@@ -23,13 +23,13 @@ assert.equal(node('#mineview').hidden,false);assert.equal(node('#game-window').h
 click({shopTab:'foods'});assert(node('#storeview').innerHTML.includes('shop-content shop-foods'));assert(node('#storeview').innerHTML.includes('data-shop-tab="tools"'));
 run('state.player.energy=1');click({action:'buyFood',id:'5'});click({action:'eat',id:'5'});assert.equal(run('state.buffs[0].kind'),'yield');assert(node('#playercard').innerHTML.includes('แซนด์วิชไข่'));
 click({tab:'bag'});click({bagTab:'foods'});assert(node('#storeview').innerHTML.includes('aria-label="ช่องอาหาร"'));assert(node('#storeview').innerHTML.includes('กินอาหาร'));
-click({tab:'mine'});for(const h of events.keydown)h({key:'b',code:'KeyB',target:{tagName:'BODY'},preventDefault(){}});assert.equal(run('tab'),'bag');assert.equal(node('#game-window').hidden,false);
+click({tab:'mine'});for(const h of events.keydown)h({key:'b',code:'KeyB',isTrusted:true,target:{tagName:'BODY'},preventDefault(){}});assert.equal(run('tab'),'bag');assert.equal(node('#game-window').hidden,false);
 click({tab:'mine'});click({sector:'1'});assert.equal(run('sector'),19);const money=run('state.money');click({action:'unlock',id:'1'});assert.equal(run('state.money'),money-run('M.mines[1].unlockPrice'));click({sector:'1'});assert.equal(run('sector'),1);
 let energy=run('state.player.energy');run('begin()');assert(run('!!qte'));assert(run('!!state.pending'));assert(run('state.player.energy')<energy);
-const key=run('qte.key');now=run('qte.start+qte.duration*(85/110)');for(const h of events.keydown)h({key,code:'Key'+key,target:{tagName:'BODY'},preventDefault(){}});
+const key=run('qte.key');now=run('qte.start+qte.duration*(85/110)');for(const h of events.keydown)h({key,code:'Key'+key,isTrusted:true,target:{tagName:'BODY'},preventDefault(){}});
 assert.equal(run('qte'),null);assert.equal(run('pressBlasts.at(-1).perfect'),true);assert.equal(run('state.pending'),null);assert(node('#toast').textContent.includes('100%'));assert(run('state.player.xp')>0);
 assert.equal(run('lootDrops.length'),0); // Actual ore sprites wait for pickaxe impact.
-now+=900;run(`frame(${now})`);run('begin()');const wrongKey=run("qte.key==='W'?'a':'w'");for(const h of events.keydown)h({key:wrongKey,code:'Key'+wrongKey.toUpperCase(),target:{tagName:'BODY'},preventDefault(){}});assert(node('#toast').textContent.includes('0%'));assert(node('#toast').textContent.includes('ไม่ได้รับแร่'));
+now+=900;run(`frame(${now})`);run('begin()');const wrongKey=run("qte.key==='W'?'a':'w'");for(const h of events.keydown)h({key:wrongKey,code:'Key'+wrongKey.toUpperCase(),isTrusted:true,target:{tagName:'BODY'},preventDefault(){}});assert(node('#toast').textContent.includes('0%'));assert(node('#toast').textContent.includes('ไม่ได้รับแร่'));
 await run('SaveStorage.flush()');assert.equal(saved.format,'deepfield-local-chain');assert(run('M.valid(state)'));assert(!node('#storeview').innerHTML.includes('NaN'));
 // All 100 models and all 50 mine scenes can render with progression metadata.
 run('state.pending=null;qte=null;swing=null;state.unlocked=M.mines.map((m,i)=>i);state.player.level=100;state.player.energy=M.maxEnergy(state)');
@@ -46,10 +46,11 @@ run("tab='mine';qte=null;swing=null;state.tools[0].type=0;state.tools[0].dur=40;
 run('drawPressBlasts(1e9)');assert.equal(run('pressBlasts.length'),0);node('#sound-toggle').onclick();assert.equal(node('#sound-toggle').textContent,'🔇');node('#sound-toggle').onclick();assert.equal(node('#sound-toggle').textContent,'🔊');
 // Slower WASD-only manual controls, physical key codes and auto lifecycle.
 run("tab='mine';qte=null;swing=null;state.pending=null;state.tools[0].dur=40;state.player.energy=M.maxEnergy(state)");
-const keydown=(key,code)=>{for(const h of events.keydown)h({key,code,target:{tagName:'BODY'},preventDefault(){}});};
+const keydown=(key,code)=>{for(const h of events.keydown)h({key,code,isTrusted:true,target:{tagName:'BODY'},preventDefault(){}});};
 keydown(' ','Space');assert.equal(run('qte'),null);
 keydown('w','KeyW');assert(run('!!qte'));assert(run('qte.duration>=300&&qte.duration<=3000'));assert('WASD'.includes(run('qte.key')));
 keydown('x','KeyX');assert(run('!!qte'));
+const hitsBeforeSynthetic=run('state.hits');for(const h of events.keydown)h({key:run('qte.key'),code:'Key'+run('qte.key'),isTrusted:false,target:{tagName:'BODY'},preventDefault(){}});assert(run('!!qte'));assert.equal(run('state.hits'),hitsBeforeSynthetic);
 const physical=run('qte.key');now=run('qte.start+qte.duration*(85/110)');keydown('ไ','Key'+physical);assert.equal(run('qte'),null);assert(node('#toast').textContent.includes('100%'));
 run('swing=null');node('#auto-mine').onclick();assert(run('autoMining'));assert(run('!!qte'));
 const hitsBefore=run('state.hits'),oresBeforeAuto=run('JSON.stringify(state.ores)');
