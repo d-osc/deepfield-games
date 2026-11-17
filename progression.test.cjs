@@ -74,3 +74,11 @@ console.log('PASS: levels/energy, 100 tool costs and lifecycles, QTE quality, 30
  for(const hp of [-1,0,1.5,Infinity,G.rockMax(0)+1]){const invalid=G.fresh();invalid.rockHealth[0]=hp;assert(!G.valid(invalid));}
  console.log('PASS: rock damage, miss without damage, break/reset, next-mine unlock, per-mine persistence, last mine and migration');
 }
+
+{
+ const previous=G.fresh();delete previous.rockVersion;previous.rockHealth=G.mines.map((_,i)=>(30+i*12));previous.rockHealth[0]=15;
+ const upgraded=G.migrate(previous);assert.equal(upgraded.rockHealth[0],30);assert.equal(upgraded.rockHealth[49],G.rockMax(49));assert.equal(upgraded.rockVersion,2);
+ assert.deepEqual(G.migrate(upgraded).rockHealth,upgraded.rockHealth);assert.equal(previous.rockHealth[0],15);
+ assert.equal(G.rockMax(0),60);assert.equal(G.rockMax(49),1236);assert(!G.valid({...upgraded,rockVersion:99}));
+ console.log('PASS: doubled rock durability, proportional legacy migration and no repeat scaling');
+}

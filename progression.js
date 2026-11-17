@@ -34,18 +34,19 @@ function debuff(s,sector=s.sector){const d=mines[sector].debuff;return {...d,val
 function energyCost(s,t=G.tool(s),sector=s.sector){let d=debuff(s,sector);return Math.max(1,Math.ceil(types[t.type].energyCost*(1+(d.kind==='energy'?d.value/100:0))*(1-buffValue(s,'energy')/100)));}
 function timingFactor(s,sector=s.sector){let d=debuff(s,sector);return d.kind==='speed'?1-d.value/100:1;}
 function score(progress){if(!Number.isFinite(progress)||progress<0||progress>=1)return 0;const distance=Math.abs((150-110*progress)-65);if(distance<=1)return 100;return clamp(Math.floor(100*(1-distance/65)),0,99);}
-const rockMax=sector=>30+sector*12;
+const rockMax=sector=>60+sector*24;
 const freshRocks=()=>mines.map((_,i)=>rockMax(i));
-function fresh(){const s=Base.fresh();return {...s,version:2,rockHealth:freshRocks(),player:{level:1,xp:0,energy:100,recoveredAt:Date.now()},foods:Object.fromEntries(foods.map(f=>[f.id,f.id===0?3:0])),buffs:[],unlocked:[0],pending:null};}
+function fresh(){const s=Base.fresh();return {...s,version:2,rockVersion:2,rockHealth:freshRocks(),player:{level:1,xp:0,energy:100,recoveredAt:Date.now()},foods:Object.fromEntries(foods.map(f=>[f.id,f.id===0?3:0])),buffs:[],unlocked:[0],pending:null};}
 function migrate(s){
  if(!s||![1,2].includes(s.version))return s;
- if(s.version===2){if(!valid(s))return s;let copy=JSON.parse(JSON.stringify(s));copy.rockHealth??=freshRocks();copy.pending=null;recover(copy);return copy;}
+ if(s.version===2){if(!valid(s))return s;let copy=JSON.parse(JSON.stringify(s));if(!copy.rockHealth)copy.rockHealth=freshRocks();else if(copy.rockVersion!==2)copy.rockHealth=copy.rockHealth.map(hp=>hp*2);copy.rockVersion=2;copy.pending=null;recover(copy);return copy;}
  const old=Base.migrate(s);if(!Base.valid(old))return s;
- const next={...fresh(),...old,version:2,rockHealth:freshRocks(),player:{level:1,xp:0,energy:100,recoveredAt:Date.now()},foods:Object.fromEntries(foods.map(f=>[f.id,f.id===0?3:0])),buffs:[],unlocked:[...new Set([0,old.sector])],pending:null};
+ const next={...fresh(),...old,version:2,rockVersion:2,rockHealth:freshRocks(),player:{level:1,xp:0,energy:100,recoveredAt:Date.now()},foods:Object.fromEntries(foods.map(f=>[f.id,f.id===0?3:0])),buffs:[],unlocked:[...new Set([0,old.sector])],pending:null};
  return next;
 }
 function valid(s){
  if(!s||s.version!==2||!Base.valid({...s,version:1})||!s.player)return false;
+ if(s.rockVersion!==undefined&&s.rockVersion!==2)return false;
  if(s.rockHealth!==undefined&&(!Array.isArray(s.rockHealth)||s.rockHealth.length!==mines.length||!s.rockHealth.every((hp,i)=>Number.isSafeInteger(hp)&&hp>0&&hp<=rockMax(i))))return false;
  const p=s.player;
  if(!Number.isInteger(p.level)||p.level<1||p.level>10000||!Number.isSafeInteger(p.xp)||p.xp<0||p.xp>=xpNeeded(p.level)||!Number.isFinite(p.energy)||p.energy<0||p.energy>maxEnergy(s)||!Number.isFinite(p.recoveredAt)||p.recoveredAt<0)return false;
